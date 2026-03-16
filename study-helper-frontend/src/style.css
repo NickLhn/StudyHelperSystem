@@ -1,0 +1,129 @@
+@import './styles/design-system.css';
+
+:root {
+  font-family: var(--font-family-base);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-normal);
+
+  color-scheme: light;
+  color: var(--gray-900);
+  background-color: var(--bg-primary);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+a {
+  font-weight: var(--font-weight-medium);
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--gray-900);
+  background-color: var(--bg-primary);
+  background-image:
+    radial-gradient(1100px 600px at 18% 0%, rgba(47, 111, 237, 0.10), transparent 55%),
+    radial-gradient(900px 560px at 86% 12%, rgba(14, 165, 164, 0.10), transparent 55%),
+    radial-gradient(800px 520px at 60% 104%, rgba(227, 155, 6, 0.10), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(22, 35, 58, 0.035) 0, rgba(22, 35, 58, 0.035) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(0deg, rgba(22, 35, 58, 0.028) 0, rgba(22, 35, 58, 0.028) 1px, transparent 1px, transparent 28px);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-bold);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--gray-900);
+}
+
+h1 { font-size: var(--font-size-xxxl); line-height: var(--line-height-tight); letter-spacing: 0.2px; }
+h2 { font-size: var(--font-size-xxl); line-height: var(--line-height-tight); letter-spacing: 0.2px; }
+h3 { font-size: var(--font-size-xl); line-height: var(--line-height-normal); }
+h4 { font-size: var(--font-size-lg); line-height: var(--line-height-normal); }
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+
+.card {
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-200);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  #app {
+    padding: var(--spacing-md);
+  }
+  
+  h1 { font-size: var(--font-size-xxl); }
+  h2 { font-size: var(--font-size-xl); }
+  h3 { font-size: var(--font-size-lg); }
+  
+  .page-container {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  #app {
+    padding: var(--spacing-sm);
+  }
+  
+  .edu-navbar {
+    padding: 0 var(--spacing-md);
+    height: 56px;
+  }
+  
+  .page-title {
+    font-size: var(--font-size-xxl);
+  }
+}
+
+/* 教育场景特殊样式 */
+.education-theme {
+  background: linear-gradient(135deg, #E6F7FF 0%, #F0F9FF 50%, #E8F5E8 100%);
+}
+
+.learning-environment {
+  background-color: var(--bg-primary);
+  font-family: var(--font-family-base);
+}
+
+.focus-mode {
+  background-color: #FEFCF3;
+  color: var(--gray-900);
+}

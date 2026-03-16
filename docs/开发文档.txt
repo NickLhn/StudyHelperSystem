@@ -1,0 +1,435 @@
+
+#### 5.1.3 数据模型
+
+**作业提交表（task_submissions）**
+
+| 字段名 | 类型 | 说明 | 约束 |
+|--------|------|------|--------|
+| id | BIGINT | 主键 | PK, AUTO_INCREMENT |
+| task_id | BIGINT | 作业ID | FK -> tasks.id |
+| user_id | BIGINT | 学生ID | FK -> users.id |
+| file_path | VARCHAR(500) | 文件路径 | NOT NULL |
+| file_name | VARCHAR(255) | 文件名 | NOT NULL |
+| file_size | BIGINT | 文件大小(字节) | NOT NULL |
+| score | DECIMAL(5,2) | 评分 | NULL |
+| comment | TEXT | 评语 | NULL |
+| status | VARCHAR(20) | 状态 | NOT NULL |
+| submitted_at | DATETIME | 提交时间 | NULL |
+| graded_at | DATETIME | 批改时间 | NULL |
+| created_at | DATETIME | 创建时间 | NOT NULL |
+| updated_at | DATETIME | 更新时间 | NOT NULL |
+
+**状态枚举**：
+- `DRAFT`：草稿
+- `SUBMITTED`：已提交
+- `GRADED`：已批改
+- `RETURNED`：已退回
+
+#### 5.1.4 API设计
+
+**学生端API**
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/task/submissions | 获取作业提交列表 |
+| POST | /api/task/{taskId}/submit | 提交作业 |
+| GET | /api/task/submission/{id} | 获取提交详情 |
+| PUT | /api/task/submission/{id} | 更新提交(草稿状态) |
+
+**教师端API**
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/task/{taskId}/submissions | 获取学生提交列表 |
+| GET | /api/task/submission/{id} | 获取提交详情 |
+| POST | /api/task/submission/{id}/grade | 批改作业 |
+| POST | /api/task/{taskId}/batch-grade | 批量批改 |
+
+#### 5.1.5 前端设计
+
+**学生作业提交页面**
+
+```vue
+<template>
+  <div class="task-submission">
+    <div class="task-info">
+      <h2>{{ task.title }}</h2>
+      <p>{{ task.description }}</p>
+      <div class="meta">
+        <span>截止时间：{{ task.deadline }}</span>
+        <span>课程：{{ task.courseName }}</span>
+      </div>
+    </div>
+
+    <div class="submission-form">
+      <el-upload
+        :action="uploadUrl"
+        :on-success="handleUploadSuccess"
+        :before-upload="beforeUpload"
+        :file-list="fileList"
+      >
+        <el-button type="primary">上传作业</el-button>
+      </el-upload>
+
+      <el-input
+        v-model="submission.note"
+        type="textarea"
+        placeholder="备注说明"
+      />
+
+      <el-button @click="submit" :loading="submitting">
+        提交作业
+      </el-button>
+    </div>
+
+    <div class="submission-history">
+      <h3>提交历史</h3>
+      <el-table :data="history">
+        <el-table-column prop="submittedAt" label="提交时间" />
+        <el-table-column prop="fileName" label="文件名" />
+        <el-table-column prop="status" label="状态" />
+        <el-table-column prop="score" label="成绩" />
+        <el-table-column prop="comment" label="评语" />
+      </el-table>
+    </div>
+  </div>
+</template>
+```
+
+**教师批改页面**
+
+```vue
+<template>
+  <div class="grading-panel">
+    <div class="student-info">
+      <h3>{{ student.name }}</h3>
+      <p>学号：{{ student.studentId }}</p>
+      <p>提交时间：{{ submission.submittedAt }}</p>
+    </div>
+
+    <div class="file-preview">
+      <a :href="downloadUrl" download>下载作业</a>
+    </div>
+
+    <div class="grading-form">
+      <el-form>
+        <el-form-item label="评分">
+          <el-input-number v-model="grade.score" :max="100" />
+        </el-form-item>
+        <el-form-item label="评语">
+          <el-input v-model="grade.comment" type="textarea" />
+        </el-form-item>
+        <el-button type="primary" @click="submitGrade">
+          提交批改
+        </el-button>
+      </el-form>
+    </div>
+  </div>
+</template>
+```
+
+---
+
+### 5.2 JWT认证机制
+
+#### 5.2.1 功能需求
+
+- 实现基于JWT的认证机制
+- Token包含用户基本信息和权限
+- Token自动刷新机制
+- Token过期时间控制
+- 敏感操作二次验证
+
+#### 5.2.2 技术方案
+
+**JWT结构**：
+```json
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "userId": 1,
+    "username": "student",
+    "role": "STUDENT",
+    "iat": 1678876800,
+    "exp": 1678880400
+  },
+  "signature": "..."
+}
+```
+
+**Token配置**：
+- 访问Token有效期：2小时
+- 刷新Token有效期：7天
+- 签名算法：HS256
+- 密钥：配置文件中设置
+
+#### 5.2.3 实现方案
+
+**后端实现**
+
+1. **添加JWT依赖**
+
+```xml
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-api</artifactId>
+    <version>0.11.5</version>
+</dependency>
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-impl</artifactId>
+    <version>0.11.5</version>
+</dependency>
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-jackson</artifactId>
+    <version>0.11.5</version>
+</dependency>
+```
+
+2. **JWT工具类**
+
+```java
+@Component
+public class JwtUtil {
+    
+    @Value("${jwt.secret}")
+    private String secret;
+    
+    @Value("${jwt.expiration}")
+    private Long expiration;
+    
+    public String generateToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        claims.put("username", user.getUsername());
+        claims.put("role", user.getRole().toString());
+        
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
+                .signWith(SignatureAlgorithm.HS256, secret)
+                .compact();
+    }
+    
+    public Claims parseToken(String token) {
+        return Jwts.parser()
+                .setSigningKey(secret)
+                .parseClaimsJws(token)
+                .getBody();
+    }
+    
+    public boolean validateToken(String token) {
+        try {
+            parseToken(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+```
+
+3. **JWT过滤器**
+
+```java
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, 
+                                    HttpServletResponse response, 
+                                    FilterChain chain) 
+            throws ServletException, IOException {
+        
+        String token = request.getHeader("Authorization");
+        
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+            
+            if (jwtUtil.validateToken(token)) {
+                Claims claims = jwtUtil.parseToken(token);
+                Long userId = claims.get("userId", Long.class);
+                String role = claims.get("role", String.class);
+                
+                UsernamePasswordAuthenticationToken authentication = 
+                    new UsernamePasswordAuthenticationToken(userId, null, 
+                        AuthorityUtils.createAuthorities(role));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }
+        
+        chain.doFilter(request, response);
+    }
+}
+```
+
+4. **登录接口改造**
+
+```java
+@PostMapping("/login")
+public ApiResponse<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    User user = userService.authenticate(request.getAccount(), request.getPassword());
+    
+    String accessToken = jwtUtil.generateToken(user);
+    String refreshToken = jwtUtil.generateRefreshToken(user);
+    
+    Map<String, Object> result = new HashMap<>();
+    result.put("accessToken", accessToken);
+    result.put("refreshToken", refreshToken);
+    result.put("expiresIn", jwtUtil.getExpiration());
+    result.put("user", UserDTO.fromUser(user));
+    
+    return ApiResponse.success("登录成功", result);
+}
+```
+
+**前端实现**
+
+1. **Axios拦截器**
+
+```javascript
+import axios from 'axios'
+import { useUserStore } from '../stores/user'
+
+const api = axios.create({
+  baseURL: 'http://localhost:8080/api',
+  timeout: 10000
+})
+
+api.interceptors.request.use(
+  config => {
+    const userStore = useUserStore()
+    if (userStore.token) {
+      config.headers.Authorization = `Bearer ${userStore.token}`
+    }
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
+
+api.interceptors.response.use(
+  response => {
+    return response
+  },
+  error => {
+    if (error.response?.status === 401) {
+      const userStore = useUserStore()
+      userStore.logout()
+      router.push('/login')
+    }
+    return Promise.reject(error)
+  }
+)
+
+export default api
+```
+
+2. **Token刷新**
+
+```javascript
+const refreshToken = async () => {
+  try {
+    const response = await axios.post('/api/auth/refresh', {
+      refreshToken: userStore.refreshToken
+    })
+    
+    userStore.setToken(response.data.accessToken)
+    userStore.setRefreshToken(response.data.refreshToken)
+    
+    return response.data.accessToken
+  } catch (error) {
+    userStore.logout()
+    router.push('/login')
+  }
+}
+```
+
+#### 5.2.4 安全配置
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf().disable()
+            .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .authorizeHttpRequests()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/user/register").permitAll()
+                .anyRequest().authenticated()
+            .and()
+            .addFilterBefore(jwtAuthenticationFilter(), 
+                           UsernamePasswordAuthenticationFilter.class);
+        
+        return http.build();
+    }
+}
+```
+
+---
+
+### 5.3 错题本功能
+
+#### 5.3.1 功能需求
+
+- 自动记录错题
+- 按科目筛选错题
+- 标记错题为已掌握
+- 错题重练
+- 错题导出
+
+#### 5.3.2 数据模型
+
+**错题表（wrong_questions）**
+
+| 字段名 | 类型 | 说明 | 约束 |
+|--------|------|------|--------|
+| id | BIGINT | 主键 | PK, AUTO_INCREMENT |
+| user_id | BIGINT | 用户ID | FK -> users.id |
+| quiz_id | BIGINT | 测验ID | FK -> quizzes.id |
+| question_id | BIGINT | 题目ID | FK -> questions.id |
+| is_mastered | BOOLEAN | 是否已掌握 | DEFAULT FALSE |
+| mastered_at | DATETIME | 掌握时间 | NULL |
+| review_count | INT | 复习次数 | DEFAULT 0 |
+| last_reviewed_at | DATETIME | 最后复习时间 | NULL |
+| created_at | DATETIME | 创建时间 | NOT NULL |
+
+#### 5.3.3 API设计
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/wrong-questions | 获取错题列表 |
+| POST | /api/wrong-questions/{id}/master | 标记为已掌握 |
+| POST | /api/wrong-questions/practice | 错题重练 |
+| DELETE | /api/wrong-questions/{id} | 删除错题 |
+| GET | /api/wrong-questions/export | 导出错题 |
+
+#### 5.3.4 业务逻辑
+
+**自动记录错题**
+
+```java
+@Transactional
+public void recordWrongQuestion(Long userId, Long quizId, Long questionId) {
+    // 检查是否已存在
+    if (wrongQuestionRepository.existsByUserIdAndQuestionId(userId, questionId)) {
+        return;
+    }
+    
+    WrongQuestion wrongQuestion = new WrongQuestion();
+    wrongQuestion.setUserId(userId);
+    wrongQuestion.setQuizId(quizId);
