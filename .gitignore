@@ -1,1 +1,5 @@
 config/aliyun-secret.json
+data/uploads/
+study-helper-frontend/node_modules/
+study-helper-frontend/dist/
+study-helper-backend/target/

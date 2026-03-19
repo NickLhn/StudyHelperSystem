@@ -260,19 +260,6 @@ const routes = [
         component: () => import('../views/MaterialUpload.vue')
       }
     ]
-  },
-
-  // 模拟教师登录（用于测试）
-  {
-    path: '/mock-teacher-login',
-    name: 'MockTeacherLogin',
-    component: () => import('../views/MockTeacherLogin.vue')
-  },
-  // 模拟管理员登录（用于测试）
-  {
-    path: '/mock-admin-login',
-    name: 'MockAdminLogin',
-    component: () => import('../views/MockAdminLogin.vue')
   }
 ]
 

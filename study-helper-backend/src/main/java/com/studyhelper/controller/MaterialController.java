@@ -1,5 +1,6 @@
 package com.studyhelper.controller;
 
+import com.studyhelper.config.AccessGuard;
 import com.studyhelper.dto.ApiResponse;
 import com.studyhelper.dto.CommentDTO;
 import com.studyhelper.dto.MaterialDTO;
@@ -32,6 +33,9 @@ public class MaterialController {
     @Autowired
     private MaterialService materialService;
 
+    @Autowired
+    private AccessGuard accessGuard;
+
     @Value("${file.upload.path}")
     private String uploadPath;
 
@@ -42,6 +46,7 @@ public class MaterialController {
             @RequestParam String name,
             @RequestParam(required = false) String description,
             @RequestParam("file") MultipartFile file) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             MaterialDTO material = materialService.uploadMaterial(userId, courseId, name, description, file);
             return ApiResponse.success("资料上传成功", material);
@@ -52,6 +57,7 @@ public class MaterialController {
 
     @GetMapping("/list")
     public ApiResponse<List<MaterialDTO>> getAllMaterials(@RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             List<MaterialDTO> materials = materialService.getAllMaterials(userId);
             return ApiResponse.success(materials);
@@ -64,6 +70,7 @@ public class MaterialController {
     public ApiResponse<List<MaterialDTO>> getMaterialsByCourse(
             @RequestParam Long courseId,
             @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             List<MaterialDTO> materials = materialService.getMaterialsByCourse(courseId, userId);
             return ApiResponse.success(materials);
@@ -76,6 +83,7 @@ public class MaterialController {
     public ApiResponse<MaterialDTO> getMaterialById(
             @PathVariable Long materialId,
             @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             MaterialDTO material = materialService.getMaterialById(materialId, userId);
             return ApiResponse.success(material);
@@ -88,6 +96,7 @@ public class MaterialController {
     public ResponseEntity<Resource> downloadMaterial(
             @PathVariable Long materialId,
             @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             MaterialDTO material = materialService.getMaterialById(materialId, userId);
             
@@ -130,6 +139,7 @@ public class MaterialController {
     public ApiResponse<MaterialDTO> toggleLike(
             @PathVariable Long materialId,
             @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             MaterialDTO material = materialService.toggleLike(materialId, userId);
             String message = material.isLikedByCurrentUser() ? "点赞成功" : "取消点赞";
@@ -143,6 +153,7 @@ public class MaterialController {
     public ApiResponse<MaterialDTO> toggleFavorite(
             @PathVariable Long materialId,
             @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             MaterialDTO material = materialService.toggleFavorite(materialId, userId);
             String message = material.isFavoritedByCurrentUser() ? "收藏成功" : "取消收藏";
@@ -156,6 +167,7 @@ public class MaterialController {
     public ApiResponse<String> deleteMaterial(
             @PathVariable Long materialId,
             @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             materialService.deleteMaterial(materialId, userId);
             return ApiResponse.success("资料删除成功", null);
@@ -166,9 +178,10 @@ public class MaterialController {
 
     // 评论相关接口
     @GetMapping("/{materialId}/comments")
-    public ApiResponse<List<CommentDTO>> getComments(@PathVariable Long materialId) {
+    public ApiResponse<List<CommentDTO>> getComments(@PathVariable Long materialId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
-            List<CommentDTO> comments = materialService.getCommentsByMaterial(materialId);
+            List<CommentDTO> comments = materialService.getCommentsByMaterial(materialId, userId);
             return ApiResponse.success(comments);
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());
@@ -180,6 +193,7 @@ public class MaterialController {
             @PathVariable Long materialId,
             @RequestParam Long userId,
             @RequestParam String content) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             CommentDTO comment = materialService.addComment(materialId, userId, content);
             return ApiResponse.success("评论发表成功", comment);

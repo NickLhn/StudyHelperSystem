@@ -173,18 +173,7 @@ public class MaterialService {
     }
 
     public MaterialDTO getMaterialById(Long materialId, Long userId) {
-        Material material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("资料不存在"));
-
-        // 权限检查
-        boolean hasAccess = material.getUser().getId().equals(userId) ||
-                           (material.getCourse() != null && material.getCourse().getUser().getId().equals(userId)) ||
-                           (material.getCourse() != null && studentCourseRepository.existsByStudentIdAndCourseId(userId, material.getCourse().getId()));
-
-        if (!hasAccess) {
-            throw new RuntimeException("无权访问该资料");
-        }
-
+        Material material = getAccessibleMaterial(materialId, userId);
         Material enriched = enrichMaterialWithCounts(material);
         MaterialDTO dto = MaterialDTO.fromMaterial(enriched);
         enrichUserActions(dto, userId);
@@ -200,8 +189,7 @@ public class MaterialService {
 
     @Transactional
     public MaterialDTO toggleLike(Long materialId, Long userId) {
-        Material material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("资料不存在"));
+        Material material = getAccessibleMaterial(materialId, userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
@@ -232,8 +220,7 @@ public class MaterialService {
 
     @Transactional
     public MaterialDTO toggleFavorite(Long materialId, Long userId) {
-        Material material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("资料不存在"));
+        Material material = getAccessibleMaterial(materialId, userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
@@ -307,7 +294,8 @@ public class MaterialService {
     }
 
     // 评论相关方法
-    public List<CommentDTO> getCommentsByMaterial(Long materialId) {
+    public List<CommentDTO> getCommentsByMaterial(Long materialId, Long userId) {
+        getAccessibleMaterial(materialId, userId);
         List<Comment> comments = commentRepository.findByMaterialIdOrderByCreatedAtDesc(materialId);
         return comments.stream()
                 .map(CommentDTO::fromComment)
@@ -315,14 +303,17 @@ public class MaterialService {
     }
 
     public CommentDTO addComment(Long materialId, Long userId, String content) {
-        Material material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("资料不存在"));
+        Material material = getAccessibleMaterial(materialId, userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
+        if (content == null || content.trim().isEmpty()) {
+            throw new RuntimeException("评论内容不能为空");
+        }
+
         Comment comment = new Comment();
-        comment.setContent(content);
+        comment.setContent(content.trim());
         comment.setUser(user);
         comment.setMaterial(material);
 
@@ -345,5 +336,19 @@ public class MaterialService {
                 userId, dto.getId(), UserMaterialAction.ActionType.LIKE));
         dto.setFavoritedByCurrentUser(userMaterialActionRepository.existsByUserIdAndMaterialIdAndActionType(
                 userId, dto.getId(), UserMaterialAction.ActionType.FAVORITE));
+    }
+
+    private Material getAccessibleMaterial(Long materialId, Long userId) {
+        Material material = materialRepository.findById(materialId)
+                .orElseThrow(() -> new RuntimeException("资料不存在"));
+
+        boolean hasAccess = material.getUser().getId().equals(userId) ||
+                (material.getCourse() != null && material.getCourse().getUser().getId().equals(userId)) ||
+                (material.getCourse() != null && studentCourseRepository.existsByStudentIdAndCourseId(userId, material.getCourse().getId()));
+
+        if (!hasAccess) {
+            throw new RuntimeException("无权访问该资料");
+        }
+        return material;
     }
 }

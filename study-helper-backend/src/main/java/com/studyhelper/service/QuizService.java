@@ -74,7 +74,12 @@ public class QuizService {
             question.setContent((String) q.get("content"));
             question.setType(Question.Type.valueOf((String) q.get("type")));
             try {
-                question.setOptions(objectMapper.writeValueAsString(q.get("options")));
+                Object options = q.get("options");
+                if (options instanceof String optionsJson) {
+                    question.setOptions(optionsJson);
+                } else {
+                    question.setOptions(objectMapper.writeValueAsString(options));
+                }
             } catch (Exception e) {
                 throw new RuntimeException("题目选项序列化失败", e);
             }
@@ -153,11 +158,7 @@ public class QuizService {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("测验不存在"));
 
-        boolean hasAccess = quiz.getUser().getId().equals(userId) ||
-                           (quiz.getCourse() != null && quiz.getCourse().getUser().getId().equals(userId)) ||
-                           (quiz.getCourse() != null && studentCourseRepository.existsByStudentIdAndCourseId(userId, quiz.getCourse().getId()));
-
-        if (!hasAccess) {
+        if (!canAccessQuiz(quiz, userId)) {
             throw new RuntimeException("无权访问该测验");
         }
 
@@ -182,6 +183,10 @@ public class QuizService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
+        if (!canAccessQuiz(quiz, userId)) {
+            throw new RuntimeException("无权提交该测验");
+        }
+
         List<Question> questions = questionRepository.findByQuizIdOrderByCreatedAtAsc(quizId);
         int totalScore = questions.stream().mapToInt(Question::getScore).sum();
         int userScore = 0;
@@ -197,7 +202,7 @@ public class QuizService {
             }
         }
 
-        double accuracy = (double) userScore / totalScore;
+        double accuracy = totalScore == 0 ? 0D : (double) userScore / totalScore;
 
         // 保存记录
         QuizRecord record = new QuizRecord();
@@ -276,5 +281,11 @@ public class QuizService {
         } catch (Exception e) {
             return "{}";
         }
+    }
+
+    private boolean canAccessQuiz(Quiz quiz, Long userId) {
+        return quiz.getUser().getId().equals(userId) ||
+                (quiz.getCourse() != null && quiz.getCourse().getUser().getId().equals(userId)) ||
+                (quiz.getCourse() != null && studentCourseRepository.existsByStudentIdAndCourseId(userId, quiz.getCourse().getId()));
     }
 }

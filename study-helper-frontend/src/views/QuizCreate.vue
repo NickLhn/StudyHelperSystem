@@ -247,7 +247,7 @@ const handleSubmit = async () => {
     const questionsData = form.questions.map(q => ({
       content: q.content,
       type: q.type,
-      options: q.type === 'SINGLE_CHOICE' ? JSON.stringify(q.options) : JSON.stringify(['正确', '错误']),
+      options: q.type === 'SINGLE_CHOICE' ? q.options : ['正确', '错误'],
       answer: q.answer,
       score: q.score,
       analysis: q.analysis || ''

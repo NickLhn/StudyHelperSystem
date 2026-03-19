@@ -1,5 +1,7 @@
 package com.studyhelper.controller;
 
+import com.studyhelper.config.AccessGuard;
+import com.studyhelper.config.TokenService;
 import com.studyhelper.dto.*;
 import com.studyhelper.service.UserService;
 import jakarta.validation.Valid;
@@ -15,6 +17,12 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private AccessGuard accessGuard;
 
     @PostMapping("/register")
     public ApiResponse<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
@@ -32,7 +40,7 @@ public class UserController {
             UserDTO user = userService.login(request);
             Map<String, Object> data = new HashMap<>();
             data.put("user", user);
-            data.put("token", "mock-token-" + user.getId());
+            data.put("token", tokenService.generateToken(userService.getUserEntityById(user.getId())));
             // 添加角色信息用于前端路由判断
             data.put("role", user.getRole());
             return ApiResponse.success("登录成功", data);
@@ -43,6 +51,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ApiResponse<UserDTO> getUserById(@PathVariable Long id) {
+        accessGuard.requireSelfOrAdmin(id);
         try {
             UserDTO user = userService.getUserById(id);
             return ApiResponse.success(user);
@@ -53,6 +62,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ApiResponse<UserDTO> updateUser(@PathVariable Long id, @RequestBody RegisterRequest request) {
+        accessGuard.requireSelfOrAdmin(id);
         try {
             UserDTO user = userService.updateUser(id, request);
             return ApiResponse.success("更新成功", user);
@@ -63,6 +73,7 @@ public class UserController {
 
     @PostMapping("/{id}/avatar")
     public ApiResponse<String> updateAvatar(@PathVariable Long id, @RequestParam String avatarUrl) {
+        accessGuard.requireSelfOrAdmin(id);
         try {
             userService.updateAvatar(id, avatarUrl);
             return ApiResponse.success("头像更新成功", avatarUrl);

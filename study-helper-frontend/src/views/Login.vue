@@ -214,7 +214,7 @@ const handleLogin = async () => {
 // 演示账号填充
 const fillDemoAccount = (type) => {
   const accounts = {
-    admin: { account: 'admin', password: 'admin' },
+    admin: { account: 'admin', password: 'ChangeMe123!' },
     teacher: { account: 'teacher', password: 'teacher' },
     student: { account: 'student', password: 'student' }
   }

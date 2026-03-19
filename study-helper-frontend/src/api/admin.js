@@ -1,43 +1,4 @@
-import axios from 'axios'
-
-const API_BASE_URL = 'http://localhost:8080/api'
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-// 请求拦截器，添加认证令牌
-api.interceptors.request.use(
-  config => {
-    const token = localStorage.getItem('token')
-    console.log('请求拦截器 - 获取token:', token)
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-      console.log('请求拦截器 - 设置Authorization头')
-    } else {
-      console.log('请求拦截器 - 未找到token!')
-    }
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
-)
-
-// 响应拦截器，用于调试
-api.interceptors.response.use(
-  response => {
-    console.log('响应拦截器 - 收到响应:', response.status)
-    return response
-  },
-  error => {
-    console.log('响应拦截器 - 错误:', error.response?.status, error.response?.data)
-    return Promise.reject(error)
-  }
-)
+import api from './client'
 
 // 管理员相关API
 

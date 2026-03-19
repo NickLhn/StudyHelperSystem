@@ -1,5 +1,6 @@
 package com.studyhelper.controller;
 
+import com.studyhelper.config.TokenService;
 import com.studyhelper.entity.User;
 import com.studyhelper.entity.InvitationCode;
 import com.studyhelper.repository.InvitationCodeRepository;
@@ -22,6 +23,9 @@ public class AuthController {
     
     @Autowired
     private InvitationCodeRepository invitationCodeRepository;
+
+    @Autowired
+    private TokenService tokenService;
 
     /**
      * 教师注册
@@ -143,8 +147,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // 生成模拟token（实际项目中应该使用JWT）
-            String token = "teacher_token_" + user.getId() + "_" + System.currentTimeMillis();
+            String token = tokenService.generateToken(user);
             
             response.put("success", true);
             response.put("message", "登录成功");

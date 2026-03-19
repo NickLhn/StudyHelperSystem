@@ -1,5 +1,6 @@
 package com.studyhelper.controller;
 
+import com.studyhelper.config.AccessGuard;
 import com.studyhelper.dto.ApiResponse;
 import com.studyhelper.dto.CourseDTO;
 import com.studyhelper.dto.CourseRequest;
@@ -22,8 +23,12 @@ public class CourseController {
     @Autowired
     private CourseService courseService;
 
+    @Autowired
+    private AccessGuard accessGuard;
+
     @PostMapping("/create")
     public ApiResponse<CourseDTO> createCourse(@RequestParam Long userId, @Valid @RequestBody CourseRequest request) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             CourseDTO course = courseService.createCourse(userId, request);
             return ApiResponse.success("课程创建成功", course);
@@ -34,6 +39,7 @@ public class CourseController {
 
     @GetMapping("/list")
     public ApiResponse<List<CourseDTO>> getUserCourses(@RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             List<CourseDTO> courses = courseService.getUserCourses(userId);
             return ApiResponse.success(courses);
@@ -44,6 +50,7 @@ public class CourseController {
 
     @GetMapping("/student/list")
     public ApiResponse<List<CourseDTO>> getStudentCourses(@RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             List<CourseDTO> courses = courseService.getStudentCourses(userId);
             return ApiResponse.success(courses);
@@ -54,6 +61,7 @@ public class CourseController {
 
     @PostMapping("/join")
     public ApiResponse<CourseDTO> joinCourse(@RequestParam Long userId, @RequestParam String invitationCode) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             CourseDTO course = courseService.joinCourse(userId, invitationCode);
             return ApiResponse.success("加入课程成功", course);
@@ -64,6 +72,7 @@ public class CourseController {
 
     @GetMapping("/list-by-category")
     public ApiResponse<List<CourseDTO>> getUserCoursesByCategory(@RequestParam Long userId, @RequestParam Course.Category category) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             List<CourseDTO> courses = courseService.getUserCoursesByCategory(userId, category);
             return ApiResponse.success(courses);
@@ -74,6 +83,7 @@ public class CourseController {
 
     @GetMapping("/{courseId}")
     public ApiResponse<CourseDTO> getCourseById(@PathVariable Long courseId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             CourseDTO course = courseService.getCourseById(courseId, userId);
             return ApiResponse.success(course);
@@ -84,6 +94,7 @@ public class CourseController {
 
     @GetMapping("/{courseId}/students")
     public ApiResponse<List<UserDTO>> getCourseStudents(@PathVariable Long courseId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             List<User> students = courseService.getCourseStudents(courseId, userId);
             List<UserDTO> dtos = students.stream().map(UserDTO::fromUser).collect(Collectors.toList());
@@ -95,6 +106,7 @@ public class CourseController {
 
     @PostMapping("/{courseId}/invitation-code/refresh")
     public ApiResponse<Map<String, Object>> refreshInvitationCode(@PathVariable Long courseId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             String code = courseService.refreshInvitationCode(courseId, userId);
             return ApiResponse.success("邀请码刷新成功", Map.of("invitationCode", code));
@@ -105,6 +117,7 @@ public class CourseController {
 
     @DeleteMapping("/{courseId}/students/{studentId}")
     public ApiResponse<Void> removeStudent(@PathVariable Long courseId, @PathVariable Long studentId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             courseService.removeStudent(courseId, userId, studentId);
             return ApiResponse.success("移除学生成功", null);
@@ -118,6 +131,7 @@ public class CourseController {
             @PathVariable Long courseId,
             @RequestParam Long userId,
             @RequestParam(defaultValue = "week") String period) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             Map<String, Object> stats = courseService.getCourseStats(courseId, userId, period);
             return ApiResponse.success(stats);
@@ -128,6 +142,7 @@ public class CourseController {
 
     @PutMapping("/{courseId}")
     public ApiResponse<CourseDTO> updateCourse(@PathVariable Long courseId, @RequestParam Long userId, @Valid @RequestBody CourseRequest request) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             CourseDTO course = courseService.updateCourse(courseId, userId, request);
             return ApiResponse.success("课程更新成功", course);
@@ -138,6 +153,7 @@ public class CourseController {
 
     @DeleteMapping("/{courseId}")
     public ApiResponse<String> deleteCourse(@PathVariable Long courseId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
         try {
             courseService.deleteCourse(courseId, userId);
             return ApiResponse.success("课程删除成功", null);

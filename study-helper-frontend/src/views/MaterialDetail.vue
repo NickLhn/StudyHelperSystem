@@ -148,7 +148,7 @@ const fetchMaterial = async () => {
 
 const fetchComments = async () => {
   try {
-    const response = await materialApi.getComments(materialId.value)
+    const response = await materialApi.getComments(materialId.value, userStore.user.id)
     if (response.data.code === 200) {
       comments.value = response.data.data
     }

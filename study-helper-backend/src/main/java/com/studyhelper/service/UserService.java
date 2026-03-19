@@ -110,6 +110,11 @@ public class UserService {
         user.setAvatar(avatarUrl);
         userRepository.save(user);
     }
+
+    public User getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+    }
     
     // 新增方法供AuthController使用
     public User findByUsername(String username) {
