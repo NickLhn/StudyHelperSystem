@@ -1,339 +1,210 @@
 <template>
-  <div class="student-container">
-    <div class="student-layout">
-      <aside class="student-sidebar">
-        <div class="sidebar-header">
-          <div class="logo-container">
-            <router-link to="/" class="logo-link">
-              <div class="logo-icon">📚</div>
-              <div class="logo-text">学习辅助系统</div>
-            </router-link>
-          </div>
-          <div class="user-info">
-            <router-link to="/profile" class="avatar-btn">
-              <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="avatar" />
-              <div v-else class="avatar-fallback">{{ avatarFallback }}</div>
-            </router-link>
-            <div class="welcome-sub">{{ userDisplayName }}</div>
-          </div>
+  <div class="app-shell">
+    <button
+      class="edu-btn edu-btn-secondary shell-menu-btn"
+      type="button"
+      @click="sidebarOpen = true"
+    >
+      菜单
+    </button>
+
+    <div v-if="sidebarOpen" class="shell-overlay" @click="sidebarOpen = false"></div>
+
+    <aside class="app-sidebar" :class="{ open: sidebarOpen }">
+      <router-link to="/student/courses" class="app-brand">
+        <span class="app-brand-mark">ST</span>
+        <span class="app-brand-copy">
+          <span class="app-brand-title">学习辅助系统</span>
+          <span class="app-brand-subtitle">Student Space</span>
+        </span>
+      </router-link>
+
+      <div class="app-user-card">
+        <router-link to="/profile" class="app-avatar" aria-label="个人中心">
+          <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" />
+          <span v-else>{{ avatarFallback }}</span>
+        </router-link>
+        <div class="app-user-copy">
+          <div class="app-user-name">{{ userDisplayName }}</div>
+          <div class="app-user-role">学生空间</div>
+        </div>
+      </div>
+
+      <nav class="app-nav">
+        <router-link
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="app-nav-link"
+          :class="{ active: isActive(item) }"
+        >
+          <span class="app-nav-badge">{{ item.badge }}</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">{{ item.label }}</span>
+            <span class="app-nav-subtitle">{{ item.subtitle }}</span>
+          </span>
+        </router-link>
+      </nav>
+
+      <div class="app-sidebar-footer">
+        <router-link to="/profile" class="app-nav-link" :class="{ active: route.path === '/profile' }">
+          <span class="app-nav-badge">PF</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">个人中心</span>
+            <span class="app-nav-subtitle">资料与头像设置</span>
+          </span>
+        </router-link>
+        <router-link to="/settings" class="app-nav-link" :class="{ active: route.path === '/settings' }">
+          <span class="app-nav-badge">ST</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">系统设置</span>
+            <span class="app-nav-subtitle">通知与偏好</span>
+          </span>
+        </router-link>
+        <button type="button" class="app-nav-link" @click="handleLogout">
+          <span class="app-nav-badge">EX</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">退出登录</span>
+            <span class="app-nav-subtitle">安全结束当前会话</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar-meta">
+          <h1 class="app-topbar-title">{{ pageMeta.title }}</h1>
+          <p class="app-topbar-copy">{{ pageMeta.subtitle }}</p>
         </div>
 
-        <nav class="sidebar-nav">
-          <router-link to="/student/courses" class="nav-item">
-            <span class="nav-icon">📚</span>
-            <span class="nav-text">课程学习</span>
+        <div class="app-topbar-actions">
+          <span class="chip">学生端</span>
+          <router-link to="/messages" class="edu-btn edu-btn-secondary message-link">
+            <span>消息中心</span>
+            <span v-if="notificationCount > 0" class="message-count">{{ notificationCount }}</span>
           </router-link>
-          <router-link to="/student/materials" class="nav-item">
-            <span class="nav-icon">📁</span>
-            <span class="nav-text">资料中心</span>
-          </router-link>
-          <router-link to="/student/statistics" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">学习统计</span>
-          </router-link>
-        </nav>
-
-        <div class="sidebar-footer">
-          <router-link to="/profile" class="nav-item">
-            <span class="nav-icon">👤</span>
-            <span class="nav-text">个人中心</span>
-          </router-link>
-          <router-link to="/settings" class="nav-item">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">设置</span>
-          </router-link>
-          <button class="nav-item logout" type="button" @click="handleLogout">
-            <span class="nav-icon">⏻</span>
-            <span class="nav-text">退出</span>
-          </button>
+          <router-link to="/profile" class="edu-btn edu-btn-ghost">个人中心</router-link>
         </div>
-      </aside>
+      </header>
 
-      <main class="student-content">
-        <header class="content-header">
-          <h1 class="page-title">{{ pageTitle }}</h1>
-          <div class="header-actions">
-            <router-link to="/messages" class="icon-btn" aria-label="消息中心">
-              <span class="icon">💬</span>
-              <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
-            </router-link>
-          </div>
-        </header>
-
-        <div class="content-body">
+      <div class="app-content">
+        <div class="page-container">
           <router-view />
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { notificationApi } from '../api/notification'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const unreadCount = ref(0)
+const sidebarOpen = ref(false)
+const notificationCount = ref(0)
 
-const userDisplayName = computed(() => userStore.user?.nickname || userStore.user?.username || '')
+const navItems = [
+  { path: '/student/courses', label: '课程学习', subtitle: '课程、班级与资料', badge: 'CR' },
+  { path: '/student/homeworks', label: '我的作业', subtitle: '待完成与已提交结果', badge: 'HW' },
+  { path: '/student/materials', label: '资料中心', subtitle: '查找和管理学习资源', badge: 'MT' },
+  { path: '/student/wrong-book', label: '错题本', subtitle: '错题整理与复习', badge: 'WB' },
+  { path: '/student/statistics', label: '学习统计', subtitle: '时长、进度与趋势', badge: 'AN' }
+]
+
+const pageMetaMap = {
+  '/student/courses': {
+    title: '课程学习',
+    subtitle: '用更清楚的界面整理课程、进入班级并快速获取关键信息。'
+  },
+  '/student/homeworks': {
+    title: '我的作业',
+    subtitle: '把待完成作业、已提交状态和得分结果集中收纳到一个页面里。'
+  },
+  '/student/homework': {
+    title: '作业学习',
+    subtitle: '支持在线作答、自动批改和教师复核后的结果查看。'
+  },
+  '/student/materials': {
+    title: '资料中心',
+    subtitle: '把下载、收藏和搜索资料这件事做得更顺手。'
+  },
+  '/student/wrong-book': {
+    title: '错题本',
+    subtitle: '把错题沉淀成可回顾、可复习、可持续清理的个人题单。'
+  },
+  '/student/statistics': {
+    title: '学习统计',
+    subtitle: '从学习时长、课程分布到趋势变化，一屏读懂。'
+  }
+}
+
+const userDisplayName = computed(() => userStore.user?.nickname || userStore.user?.username || '学生')
 const avatarUrl = computed(() => userStore.user?.avatar || '')
-const avatarFallback = computed(() => (userDisplayName.value || 'U').slice(0, 1).toUpperCase())
+const avatarFallback = computed(() => (userDisplayName.value || 'S').slice(0, 1).toUpperCase())
 
-const pageTitle = computed(() => {
-  const path = route.path
-  if (path.includes('/student/courses')) return '课程学习'
-  if (path.includes('/student/materials')) return '资料中心'
-  if (path.includes('/student/statistics')) return '学习统计'
-  return '学生端'
+const pageMeta = computed(() => {
+  const matchedKey = Object.keys(pageMetaMap).find((key) => route.path.startsWith(key))
+  return matchedKey ? pageMetaMap[matchedKey] : {
+    title: '学生空间',
+    subtitle: '把课程、资料与学习进度放到一个更舒展的工作区里。'
+  }
 })
+
+const isActive = (item) => route.path === item.path || route.path.startsWith(`${item.path}/`)
 
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+const loadNotificationSummary = async () => {
+  if (!userStore.user?.id) return
+  try {
+    const response = await notificationApi.getNotifications(userStore.user.id, 8)
+    if (response.data.code === 200) {
+      notificationCount.value = Number(response.data.data.summary?.totalCount || 0)
+    }
+  } catch (error) {
+    notificationCount.value = 0
+  }
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    sidebarOpen.value = false
+    loadNotificationSummary()
+  }
+)
+
+onMounted(loadNotificationSummary)
 </script>
 
 <style scoped>
-.student-container {
-  min-height: 100vh;
-  background-color: #f7f9fc;
-}
-
-.student-layout {
-  display: flex;
-  min-height: 100vh;
-  background: #f7f9fc;
-}
-
-.student-sidebar {
-  width: 280px;
-  background: #ffffff;
-  border-right: 1px solid #eef2f7;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 100;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-}
-
-.sidebar-header {
-  padding: 1.5rem 1.25rem;
-  border-bottom: 1px solid #eef2f7;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  color: inherit;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex: 0 0 auto;
-}
-
-.logo-text {
-  font-weight: 800;
-  color: #111827;
-  font-size: 1.1rem;
-  flex: 1;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-}
-
-.avatar-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  overflow: hidden;
+.message-link {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  text-decoration: none;
-  flex: 0 0 auto;
+  gap: 8px;
 }
 
-.avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-fallback {
-  font-weight: 900;
-  color: #111827;
-}
-
-.welcome-sub {
-  color: #6b7280;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-nav {
-  padding: 1rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 12px;
-  text-decoration: none;
-  color: #111827;
-  font-weight: 800;
-  transition: background 0.15s ease;
-}
-
-.nav-item:hover {
-  background: rgba(37, 99, 235, 0.08);
-}
-
-.nav-item.router-link-active {
-  background: rgba(37, 99, 235, 0.14);
-  color: #1d4ed8;
-}
-
-.nav-icon {
-  width: 26px;
-  display: inline-flex;
-  justify-content: center;
-}
-
-.sidebar-footer {
-  padding: 0.75rem;
-  border-top: 1px solid #eef2f7;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.nav-item.logout {
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-}
-
-.student-content {
-  flex: 1;
-  margin-left: 280px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-header {
-  height: 72px;
-  padding: 0 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #eef2f7;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: #111827;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  position: relative;
-}
-
-.badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 18px;
-  min-width: 18px;
-  height: 18px;
+.message-count {
+  min-width: 20px;
+  height: 20px;
   padding: 0 6px;
   border-radius: 999px;
+  background: #c64c4c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.content-body {
-  padding: 1.25rem;
-}
-
-@media (max-width: 900px) {
-  .student-sidebar {
-    position: static;
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-  }
-  .student-content {
-    margin-left: 0;
-  }
-  .sidebar-nav {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-  .sidebar-footer {
-    display: none;
-  }
 }
 </style>

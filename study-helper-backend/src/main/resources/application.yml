@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: study-helper-backend
+  datasource:
+    url: jdbc:mysql://localhost:3306/studyhelper?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 30MB
+
+file:
+  upload:
+    path: ./data/uploads
+
+aliyun:
+  oss:
+    enabled: false
+    endpoint: ""
+    bucket: ""
+    prefix: studyhelper/
+    secret-file: ./config/aliyun-secret.json
+
+security:
+  token:
+    secret: study-helper-dev-secret-change-before-production-please-use-env
+    expiration-hours: 24
+
+admin:
+  init:
+    enabled: true
+    username: admin
+    email: admin@example.com
+    password: ChangeMe123!

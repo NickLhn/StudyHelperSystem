@@ -25,6 +25,15 @@ public class Quiz {
 
     private Integer questionCount; // 题目数量
 
+    @Column(name = "max_attempts", nullable = false)
+    private Integer maxAttempts = 1;
+
+    @Column(name = "shuffle_questions", nullable = false)
+    private Boolean shuffleQuestions = false;
+
+    @Column(name = "auto_save_enabled", nullable = false)
+    private Boolean autoSaveEnabled = true;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Type type = Type.PRACTICE; // 测验类型
@@ -130,6 +139,30 @@ public class Quiz {
 
     public void setQuestionCount(Integer questionCount) {
         this.questionCount = questionCount;
+    }
+
+    public Integer getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public void setMaxAttempts(Integer maxAttempts) {
+        this.maxAttempts = maxAttempts;
+    }
+
+    public Boolean getShuffleQuestions() {
+        return shuffleQuestions;
+    }
+
+    public void setShuffleQuestions(Boolean shuffleQuestions) {
+        this.shuffleQuestions = shuffleQuestions;
+    }
+
+    public Boolean getAutoSaveEnabled() {
+        return autoSaveEnabled;
+    }
+
+    public void setAutoSaveEnabled(Boolean autoSaveEnabled) {
+        this.autoSaveEnabled = autoSaveEnabled;
     }
 
     public Type getType() {

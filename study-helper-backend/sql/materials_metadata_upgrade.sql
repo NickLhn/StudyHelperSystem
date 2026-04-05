@@ -1,0 +1,5 @@
+ALTER TABLE materials
+    ADD COLUMN IF NOT EXISTS category VARCHAR(64) NULL AFTER description,
+    ADD COLUMN IF NOT EXISTS tags TEXT NULL AFTER category,
+    ADD COLUMN IF NOT EXISTS version_label VARCHAR(64) NULL AFTER tags,
+    ADD COLUMN IF NOT EXISTS version_note TEXT NULL AFTER version_label;

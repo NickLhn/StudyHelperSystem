@@ -1,60 +1,79 @@
 <template>
-  <div class="admin-container">
-    <div class="admin-layout">
-      <!-- 左侧导航栏 -->
-      <aside class="admin-sidebar">
-        <div class="sidebar-header">
-          <div class="logo-container">
-            <router-link to="/admin/dashboard" class="logo-link">
-              <div class="logo-icon">🎓</div>
-              <div class="logo-text">学习辅助系统</div>
-            </router-link>
-          </div>
+  <div class="app-shell admin-shell">
+    <button
+      class="edu-btn edu-btn-secondary shell-menu-btn"
+      type="button"
+      @click="sidebarOpen = true"
+    >
+      菜单
+    </button>
+
+    <div v-if="sidebarOpen" class="shell-overlay" @click="sidebarOpen = false"></div>
+
+    <aside class="app-sidebar admin-sidebar" :class="{ open: sidebarOpen }">
+      <router-link to="/admin/dashboard" class="app-brand">
+        <span class="app-brand-mark">AD</span>
+        <span class="app-brand-copy">
+          <span class="app-brand-title">学习辅助系统</span>
+          <span class="app-brand-subtitle">Admin Console</span>
+        </span>
+      </router-link>
+
+      <div class="admin-note">
+        <strong>平台运营视图</strong>
+        <span>统一查看用户、内容、邀请码和系统运行数据。</span>
+      </div>
+
+      <nav class="app-nav">
+        <router-link
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="app-nav-link"
+          :class="{ active: isActive(item) }"
+        >
+          <span class="app-nav-badge">{{ item.badge }}</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">{{ item.label }}</span>
+            <span class="app-nav-subtitle">{{ item.subtitle }}</span>
+          </span>
+        </router-link>
+      </nav>
+
+      <div class="app-sidebar-footer">
+        <button type="button" class="app-nav-link" @click="handleLogout">
+          <span class="app-nav-badge">EX</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">退出登录</span>
+            <span class="app-nav-subtitle">返回安全登录状态</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar admin-topbar">
+        <div class="app-topbar-meta">
+          <h1 class="app-topbar-title">{{ pageMeta.title }}</h1>
+          <p class="app-topbar-copy">{{ pageMeta.subtitle }}</p>
         </div>
-        
-        <nav class="sidebar-nav">
-          <router-link to="/admin/dashboard" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">仪表盘</span>
-          </router-link>
-          <router-link to="/admin/users" class="nav-item">
-            <span class="nav-icon">👥</span>
-            <span class="nav-text">用户管理</span>
-          </router-link>
-          <router-link to="/admin/content" class="nav-item">
-            <span class="nav-icon">📚</span>
-            <span class="nav-text">内容概览</span>
-          </router-link>
-          <router-link to="/admin/invitations" class="nav-item">
-            <span class="nav-icon">🔑</span>
-            <span class="nav-text">邀请码</span>
-          </router-link>
-        </nav>
-        
-        <div class="sidebar-footer">
-          <button class="nav-item logout" type="button" @click="handleLogout">
-            <span class="nav-icon">🚪</span>
-            <span class="nav-text">退出</span>
-          </button>
+
+        <div class="app-topbar-actions">
+          <span class="chip">管理员端</span>
         </div>
-      </aside>
-      
-      <!-- 右侧内容区 -->
-      <main class="admin-content">
-        <header class="content-header">
-          <h1 class="page-title">{{ pageTitle }}</h1>
-        </header>
-        
-        <div class="content-body">
+      </header>
+
+      <div class="app-content">
+        <div class="page-container">
           <router-view />
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 
@@ -62,208 +81,80 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const pageTitle = computed(() => {
-  const path = route.path
-  if (path.includes('/admin/dashboard')) return '仪表盘'
-  if (path.includes('/admin/users')) return '用户管理'
-  if (path.includes('/admin/content')) return '内容概览'
-  if (path.includes('/admin/invitations')) return '邀请码管理'
-  return '管理员控制台'
+const sidebarOpen = ref(false)
+
+const navItems = [
+  { path: '/admin/dashboard', label: '仪表盘', subtitle: '平台总览与增长数据', badge: 'DB' },
+  { path: '/admin/users', label: '用户管理', subtitle: '成员、角色与搜索', badge: 'US' },
+  { path: '/admin/content', label: '内容概览', subtitle: '课程、资料与内容质量', badge: 'CT' },
+  { path: '/admin/invitations', label: '邀请码', subtitle: '发放、状态与治理', badge: 'IV' }
+]
+
+const pageMetaMap = {
+  '/admin/dashboard': {
+    title: '管理员仪表盘',
+    subtitle: '用更清晰的管理视图掌握平台活跃度、资源量和用户结构。'
+  },
+  '/admin/users': {
+    title: '用户管理',
+    subtitle: '搜索、筛选并治理平台中的学生、教师与管理员账户。'
+  },
+  '/admin/content': {
+    title: '内容概览',
+    subtitle: '检查课程和资料生态，及时发现内容质量问题。'
+  },
+  '/admin/invitations': {
+    title: '邀请码管理',
+    subtitle: '控制邀请码状态，维持注册流程稳定和可追踪。'
+  }
+}
+
+const pageMeta = computed(() => {
+  const matchedKey = Object.keys(pageMetaMap).find((key) => route.path.startsWith(key))
+  return matchedKey ? pageMetaMap[matchedKey] : {
+    title: '管理员控制台',
+    subtitle: '集中处理平台配置、用户和内容运营事项。'
+  }
 })
+
+const isActive = (item) => route.path === item.path || route.path.startsWith(`${item.path}/`)
 
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+watch(
+  () => route.fullPath,
+  () => {
+    sidebarOpen.value = false
+  }
+)
 </script>
 
 <style scoped>
-.admin-container {
-  min-height: 100vh;
-  background-color: #f5f7fa;
-}
-
-/* 左右布局样式 */
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-  background: #f5f7fa;
-}
-
-/* 左侧导航栏 */
 .admin-sidebar {
-  width: 280px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 100;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  background:
+    radial-gradient(circle at top, rgba(111, 152, 255, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(245, 241, 233, 0.96), rgba(238, 231, 218, 0.94));
 }
 
-.sidebar-header {
-  padding: 1.5rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.admin-topbar {
+  background: rgba(246, 241, 231, 0.82);
 }
 
-.logo-container {
-  width: 100%;
+.admin-note {
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  display: grid;
+  gap: 6px;
+  color: var(--gray-700);
+  font-size: 14px;
 }
 
-.logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  color: white;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex: 0 0 auto;
-  backdrop-filter: blur(10px);
-}
-
-.logo-text {
-  font-weight: 800;
-  color: white;
-  font-size: 1.1rem;
-  flex: 1;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 1rem 0;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  text-decoration: none;
-  color: rgba(255, 255, 255, 0.9);
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-  text-align: left;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.nav-item.active {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-weight: 700;
-}
-
-.nav-icon {
-  font-size: 1.1rem;
-  flex: 0 0 auto;
-}
-
-.nav-text {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.sidebar-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 1rem 0;
-}
-
-.nav-item.logout {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.nav-item.logout:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-/* 右侧内容区 */
-.admin-content {
-  flex: 1;
-  margin-left: 280px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-header {
-  background: #ffffff;
-  border-bottom: 1px solid #eef2f7;
-  padding: 1rem 1.5rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.content-header .page-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #111827;
-  margin: 0;
-}
-
-.content-body {
-  flex: 1;
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* 响应式设计 */
-@media (max-width: 1024px) {
-  .content-body {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .admin-sidebar {
-    width: 240px;
-  }
-  
-  .admin-content {
-    margin-left: 240px;
-  }
-  
-  .content-body {
-    padding: 1.25rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .admin-sidebar {
-    width: 100%;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-  
-  .admin-sidebar.open {
-    transform: translateX(0);
-  }
-  
-  .admin-content {
-    margin-left: 0;
-  }
+.admin-note strong {
+  color: var(--ink);
 }
 </style>

@@ -45,10 +45,15 @@ public class MaterialController {
             @RequestParam(required = false) Long courseId,
             @RequestParam String name,
             @RequestParam(required = false) String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String tags,
+            @RequestParam(required = false) String versionLabel,
+            @RequestParam(required = false) String versionNote,
             @RequestParam("file") MultipartFile file) {
         accessGuard.requireSelfOrAdmin(userId);
         try {
-            MaterialDTO material = materialService.uploadMaterial(userId, courseId, name, description, file);
+            MaterialDTO material = materialService.uploadMaterial(
+                    userId, courseId, name, description, category, tags, versionLabel, versionNote, file);
             return ApiResponse.success("资料上传成功", material);
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());

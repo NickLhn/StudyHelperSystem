@@ -1,243 +1,167 @@
 <template>
-  <div class="quiz-result-container">
-    <nav class="navbar">
-      <div class="nav-brand">学习辅助系统</div>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link">首页</router-link>
-        <router-link to="/quizzes" class="nav-link">在线测验</router-link>
-        <router-link to="/profile" class="nav-link">个人中心</router-link>
-        <button @click="handleLogout" class="btn-logout">退出</button>
+  <div class="page-stack">
+    <section class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Quiz Result</span>
+        <h2 class="page-title">{{ record?.quiz?.title || '测验结果' }}</h2>
+        <p class="page-subtitle">
+          {{ loading ? '正在加载成绩结果…' : '本次作答结果已经保存，你可以返回列表继续查看其他测验。' }}
+        </p>
       </div>
-    </nav>
-
-    <main class="result-content">
-      <div class="result-card">
-        <div class="result-header">
-          <h2>测验结果</h2>
-          <div class="score-display">
-            <div class="score-circle" :class="{ passed: isPassed }">
-              <div class="score-text">{{ score }}/{{ totalScore }}</div>
-              <div class="score-label">得分</div>
-            </div>
-          </div>
-          <div class="result-stats">
-            <div class="stat-item">
-              <div class="stat-value">{{ accuracy }}%</div>
-              <div class="stat-label">正确率</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ isPassed ? '通过' : '未通过' }}</div>
-              <div class="stat-label">状态</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="actions">
-          <router-link to="/quizzes" class="btn-primary">返回测验列表</router-link>
-          <router-link to="/wrong-book" class="btn-secondary">查看错题本</router-link>
-        </div>
+      <div v-if="record" class="page-actions">
+        <span class="chip" :class="record.isPassed ? 'success' : 'danger'">
+          {{ record.isPassed ? '通过' : '未通过' }}
+        </span>
       </div>
-    </main>
+    </section>
+
+    <section v-if="loading" class="loading-panel">
+      <p class="loading-copy">结果加载中...</p>
+    </section>
+
+    <section v-else-if="error" class="message-banner error">
+      {{ error }}
+    </section>
+
+    <template v-else-if="record">
+      <section class="result-hero">
+        <div class="score-orb" :class="record.isPassed ? 'passed' : 'failed'">
+          <strong>{{ record.score }}/{{ record.totalScore }}</strong>
+          <span>总分</span>
+        </div>
+        <div class="result-metrics">
+          <article class="metric-card">
+            <span>正确率</span>
+            <strong>{{ (record.accuracy * 100).toFixed(1) }}%</strong>
+          </article>
+          <article class="metric-card">
+            <span>耗时</span>
+            <strong>{{ formatTime(record.timeUsed || 0) }}</strong>
+          </article>
+          <article class="metric-card">
+            <span>错题数</span>
+            <strong>{{ record.wrongQuestions?.length || 0 }}</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="result-actions">
+        <router-link to="/quizzes" class="edu-btn edu-btn-primary">返回测验列表</router-link>
+        <router-link to="/student/wrong-book" class="edu-btn edu-btn-secondary">查看错题本</router-link>
+      </section>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { quizApi } from '../api/quiz'
 import { useUserStore } from '../stores/user'
 
 const route = useRoute()
-const router = useRouter()
 const userStore = useUserStore()
 
-// 模拟数据（实际应该从API获取）
-const score = ref(0)
-const totalScore = ref(0)
-const accuracy = ref(0)
-const isPassed = ref(false)
+const loading = ref(false)
+const error = ref('')
+const record = ref(null)
 
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
+const formatTime = (seconds = 0) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 }
 
-onMounted(() => {
-  // 这里应该调用API获取具体的成绩记录
-  // 暂时使用模拟数据
-  score.value = 85
-  totalScore.value = 100
-  accuracy.value = 85
-  isPassed.value = true
-})
+const fetchResult = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const response = await quizApi.getRecordDetail(route.params.recordId, userStore.user.id)
+    if (response.data.code === 200) {
+      record.value = response.data.data
+    } else {
+      error.value = response.data.message
+    }
+  } catch (err) {
+    error.value = '结果加载失败，请稍后重试'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchResult)
 </script>
 
 <style scoped>
-.quiz-result-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-  backdrop-filter: blur(10px);
-}
-
-.nav-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1rem;
+.result-hero {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
   align-items: center;
 }
 
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
+.score-orb,
+.metric-card {
+  border-radius: 26px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
 }
 
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-logout {
-  background-color: transparent;
-  border: 1px solid white;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-logout:hover {
-  background-color: white;
-  color: #667eea;
-}
-
-.result-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 80px);
-  padding: 2rem;
-}
-
-.result-card {
-  background: white;
-  border-radius: 20px;
-  padding: 3rem;
-  width: 100%;
-  max-width: 500px;
-  text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.result-header h2 {
-  color: #333;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-}
-
-.score-display {
-  margin-bottom: 2rem;
-}
-
-.score-circle {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: #ff6b6b;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto;
-  transition: all 0.3s;
-}
-
-.score-circle.passed {
-  background: #42b883;
-  box-shadow: 0 0 30px rgba(66, 184, 131, 0.3);
-}
-
-.score-text {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 0.5rem;
-}
-
-.score-label {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.1rem;
-}
-
-.result-stats {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.stat-item {
+.score-orb {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
   text-align: center;
 }
 
-.stat-value {
+.score-orb strong {
+  display: block;
+  font-size: 2.4rem;
+  margin-bottom: 10px;
+}
+
+.score-orb.passed {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.14), rgba(15, 118, 110, 0.14));
+}
+
+.score-orb.failed {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(217, 119, 6, 0.14));
+}
+
+.result-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  padding: 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.metric-card span {
+  color: var(--text-muted);
+}
+
+.metric-card strong {
   font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 0.5rem;
 }
 
-.stat-label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.actions {
+.result-actions {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary {
-  padding: 1rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 1.1rem;
-  font-weight: 500;
-  transition: all 0.3s;
-}
+@media (max-width: 860px) {
+  .result-hero {
+    grid-template-columns: 1fr;
+  }
 
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-}
-
-.btn-secondary {
-  background: #f0f0f0;
-  color: #666;
-}
-
-.btn-secondary:hover {
-  background: #e0e0e0;
-  transform: translateY(-2px);
+  .result-metrics {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

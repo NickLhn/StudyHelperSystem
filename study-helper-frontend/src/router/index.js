@@ -46,6 +46,11 @@ const routes = [
     redirect: '/student/courses'
   },
   {
+    path: '/homeworks',
+    name: 'Homeworks',
+    redirect: '/student/homeworks'
+  },
+  {
     path: '/task/create',
     name: 'TaskCreate',
     component: () => import('../views/TaskForm.vue'),
@@ -106,8 +111,7 @@ const routes = [
   {
     path: '/wrong-book',
     name: 'WrongBook',
-    component: () => import('../views/WrongBook.vue'),
-    meta: { requiresAuth: true }
+    redirect: '/student/wrong-book'
   },
   {
     path: '/statistics',
@@ -141,6 +145,21 @@ const routes = [
         component: () => import('../views/Courses.vue')
       },
       {
+        path: 'homeworks',
+        name: 'StudentHomeworks',
+        component: () => import('../views/StudentHomeworks.vue')
+      },
+      {
+        path: 'homework/:id',
+        name: 'StudentHomeworkTake',
+        component: () => import('../views/StudentHomeworkTake.vue')
+      },
+      {
+        path: 'homework/result/:submissionId',
+        name: 'StudentHomeworkResult',
+        component: () => import('../views/StudentHomeworkResult.vue')
+      },
+      {
         path: 'course/:id',
         name: 'StudentCourseDetail',
         component: () => import('../views/StudentCourseDetail.vue')
@@ -154,6 +173,11 @@ const routes = [
         path: 'statistics',
         name: 'StudentStatistics',
         component: () => import('../views/Statistics.vue')
+      },
+      {
+        path: 'wrong-book',
+        name: 'StudentWrongBook',
+        component: () => import('../views/WrongBook.vue')
       }
     ]
   },
@@ -215,9 +239,24 @@ const routes = [
         component: () => import('../views/TeacherTasks.vue')
       },
       {
+        path: 'homeworks',
+        name: 'TeacherHomeworks',
+        component: () => import('../views/TeacherHomeworks.vue')
+      },
+      {
         path: 'materials',
         name: 'TeacherMaterials',
         component: () => import('../views/TeacherMaterials.vue')
+      },
+      {
+        path: 'students',
+        name: 'TeacherStudents',
+        component: () => import('../views/TeacherStudents.vue')
+      },
+      {
+        path: 'grades',
+        name: 'TeacherGrades',
+        component: () => import('../views/TeacherGrades.vue')
       },
       {
         path: 'quizzes',
@@ -243,6 +282,16 @@ const routes = [
         path: 'task/create',
         name: 'TeacherTaskCreate',
         component: () => import('../views/TaskForm.vue')
+      },
+      {
+        path: 'homework/create',
+        name: 'TeacherHomeworkCreate',
+        component: () => import('../views/HomeworkForm.vue')
+      },
+      {
+        path: 'homework/:id',
+        name: 'TeacherHomeworkDetail',
+        component: () => import('../views/TeacherHomeworkDetail.vue')
       },
       {
         path: 'task/edit/:id',
@@ -301,7 +350,7 @@ router.beforeEach((to, from, next) => {
     } else if (userStore.user?.role === 'TEACHER') {
       next('/teacher')
     } else {
-      next('/')
+      next('/student')
     }
   } else {
     next()

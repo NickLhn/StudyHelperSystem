@@ -1,88 +1,110 @@
 <template>
-  <div class="materials-page learning-environment">
-    <main class="page-container">
-      <div class="page-header">
-        <h1 class="page-title page-title-left">资料中心</h1>
+  <div class="page-stack">
+    <section class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Material Library</span>
+        <h2 class="page-title">把资料中心做成可筛选、可搜索、可追踪版本的资源目录</h2>
+        <p class="page-subtitle">现在可以按课程、分类、文件类型和关键词筛选，也能直接看到标签和版本说明。</p>
+      </div>
+      <div class="page-actions">
+        <span class="chip">共 {{ filteredMaterials.length }} 份资料</span>
         <router-link to="/material/upload" class="edu-btn edu-btn-primary">上传资料</router-link>
       </div>
+    </section>
 
-      <div class="filters">
-        <div class="filter-group">
-          <label>课程筛选：</label>
-          <select class="edu-input select" v-model="selectedCourse" @change="filterMaterials">
-            <option value="">全部课程</option>
-            <option v-for="course in courses" :key="course.id" :value="course.id">
-              {{ course.name }}
-            </option>
-          </select>
-        </div>
-        <div class="search-box">
-          <input 
-            type="text" 
-            v-model="searchKeyword" 
-            class="edu-input search-input"
-            placeholder="搜索资料（名称 / 文件名）…"
-            @input="debouncedSearch"
-          />
-        </div>
+    <section class="filter-card">
+      <div class="toolbar-row filters-wrap">
+        <select class="edu-input select" v-model="selectedCourse">
+          <option value="">全部课程</option>
+          <option v-for="course in courses" :key="course.id" :value="String(course.id)">
+            {{ course.name }}
+          </option>
+        </select>
+
+        <select class="edu-input select" v-model="selectedCategory">
+          <option value="">全部分类</option>
+          <option v-for="item in materialCategories" :key="item.value" :value="item.value">
+            {{ item.label }}
+          </option>
+        </select>
+
+        <select class="edu-input select" v-model="selectedType">
+          <option value="">全部类型</option>
+          <option v-for="item in fileTypeOptions" :key="item" :value="item">
+            {{ item }}
+          </option>
+        </select>
+
+        <input
+          type="text"
+          v-model="searchKeyword"
+          class="edu-input search-input"
+          placeholder="搜索资料名、描述、标签或版本"
+        />
       </div>
+    </section>
 
-      <div v-if="loading" class="loading">加载中...</div>
-      
-      <div v-else-if="filteredMaterials.length === 0" class="empty-state">
-        <p>暂无资料</p>
-        <router-link to="/material/upload" class="edu-btn edu-btn-primary">上传第一份资料</router-link>
-      </div>
+    <section v-if="loading" class="loading-panel">
+      <p class="loading-copy">资料加载中...</p>
+    </section>
 
-      <div v-else class="materials-grid">
-        <div 
-          v-for="material in filteredMaterials" 
-          :key="material.id" 
-          class="material-card edu-card"
-          @click="viewMaterial(material.id)"
-        >
-          <div class="file-icon">
-            <span class="icon">{{ getFileIcon(material.fileType) }}</span>
+    <section v-else-if="filteredMaterials.length === 0" class="empty-panel">
+      <h3 class="empty-title">没有匹配到资料</h3>
+      <p class="empty-copy">可以换个课程、分类或关键词再试试，或者先上传第一份资源。</p>
+    </section>
+
+    <section v-else class="card-grid cards-3">
+      <article
+        v-for="material in filteredMaterials"
+        :key="material.id"
+        class="info-card entity-card material-card"
+        @click="viewMaterial(material.id)"
+      >
+        <div class="entity-card-header">
+          <div>
+            <h3 class="entity-card-title">{{ material.name }}</h3>
+            <p class="entity-card-subtitle">{{ material.fileName }}</p>
           </div>
-          
-          <div class="material-info">
-            <h3 class="material-name">{{ material.name }}</h3>
-            <p class="file-name">{{ material.fileName }}</p>
-            <p class="file-meta">
-              <span>{{ material.fileSizeFormatted }}</span>
-              <span v-if="material.courseName">📚 {{ material.courseName }}</span>
-            </p>
-            <p v-if="material.description" class="description">
-              {{ material.description }}
-            </p>
-          </div>
+          <span class="chip">{{ getFileLabel(material.fileType) }}</span>
+        </div>
 
-          <div class="material-stats">
-            <div class="stat-item">
-              <span class="stat-icon">📥</span>
-              <span>{{ material.downloadCount }}</span>
-            </div>
-            <div class="stat-item like" :class="{ active: material.likedByCurrentUser }" @click.stop="toggleLike(material)">
-              <span class="stat-icon">👍</span>
-              <span>{{ material.likeCount }}</span>
-            </div>
-            <div class="stat-item favorite" :class="{ active: material.favoritedByCurrentUser }" @click.stop="toggleFavorite(material)">
-              <span class="stat-icon">⭐</span>
-              <span>{{ material.favoriteCount }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-icon">💬</span>
-              <span>{{ material.commentCount }}</span>
-            </div>
+        <div class="material-meta">
+          <span class="soft-badge">{{ getCategoryLabel(material.category) }}</span>
+          <span v-if="material.versionLabel" class="soft-badge strong-badge">{{ material.versionLabel }}</span>
+          <span v-if="material.courseName" class="soft-badge">{{ material.courseName }}</span>
+        </div>
+
+        <div class="data-points">
+          <div class="data-point">
+            <span>文件大小</span>
+            <strong>{{ material.fileSizeFormatted }}</strong>
+          </div>
+          <div class="data-point">
+            <span>上传者</span>
+            <strong>{{ material.username }}</strong>
           </div>
         </div>
-      </div>
-    </main>
+
+        <p v-if="material.description" class="material-description">{{ material.description }}</p>
+        <p v-if="material.versionNote" class="material-version-note">版本说明：{{ material.versionNote }}</p>
+
+        <div v-if="material.tags?.length" class="tag-row">
+          <span v-for="tag in material.tags" :key="tag" class="tag-chip">#{{ tag }}</span>
+        </div>
+
+        <div class="material-stats">
+          <button type="button" class="soft-badge" @click.stop="toggleLike(material)">赞 {{ material.likeCount }}</button>
+          <button type="button" class="soft-badge" @click.stop="toggleFavorite(material)">藏 {{ material.favoriteCount }}</button>
+          <span class="soft-badge">评 {{ material.commentCount }}</span>
+          <span class="soft-badge">下 {{ material.downloadCount }}</span>
+        </div>
+      </article>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { materialApi } from '../api/material'
@@ -93,28 +115,68 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const materials = ref([])
-const filteredMaterials = ref([])
 const courses = ref([])
 const loading = ref(false)
 const selectedCourse = ref('')
+const selectedCategory = ref('')
+const selectedType = ref('')
 const searchKeyword = ref('')
+
+const materialCategories = [
+  { value: 'LECTURE_NOTE', label: '讲义课件' },
+  { value: 'ASSIGNMENT', label: '作业资料' },
+  { value: 'REFERENCE', label: '参考资料' },
+  { value: 'EXAM', label: '考试复习' },
+  { value: 'LAB', label: '实验资料' },
+  { value: 'OTHER', label: '其他' }
+]
+
+const fileTypeOptions = computed(() => {
+  const values = new Set(materials.value.map((item) => getFileLabel(item.fileType)))
+  return Array.from(values).sort()
+})
+
+const filteredMaterials = computed(() => {
+  const keyword = searchKeyword.value.trim().toLowerCase()
+
+  return materials.value.filter((material) => {
+    const courseMatch = !selectedCourse.value || String(material.courseId || '') === selectedCourse.value
+    const categoryMatch = !selectedCategory.value || (material.category || '') === selectedCategory.value
+    const typeMatch = !selectedType.value || getFileLabel(material.fileType) === selectedType.value
+
+    const searchPool = [
+      material.name,
+      material.fileName,
+      material.description,
+      material.courseName,
+      material.versionLabel,
+      material.versionNote,
+      ...(material.tags || [])
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    const keywordMatch = !keyword || searchPool.includes(keyword)
+    return courseMatch && categoryMatch && typeMatch && keywordMatch
+  })
+})
 
 const applyKeywordFromRoute = () => {
   const keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
-  if (!keyword) return
-  searchKeyword.value = keyword
-  debouncedSearch()
+  if (keyword) {
+    searchKeyword.value = keyword
+  }
 }
 
 const fetchMaterials = async () => {
   if (!userStore.user) return
-  
+
   loading.value = true
   try {
     const response = await materialApi.getAllMaterials(userStore.user.id)
     if (response.data.code === 200) {
       materials.value = response.data.data
-      filteredMaterials.value = [...materials.value]
     }
   } catch (error) {
     console.error('获取资料失败:', error)
@@ -125,42 +187,16 @@ const fetchMaterials = async () => {
 
 const fetchCourses = async () => {
   if (!userStore.user) return
-  
+
   try {
-    const response = await courseApi.getUserCourses(userStore.user.id)
+    const apiCall = userStore.isTeacher ? courseApi.getUserCourses : courseApi.getStudentCourses
+    const response = await apiCall(userStore.user.id)
     if (response.data.code === 200) {
       courses.value = response.data.data
     }
   } catch (error) {
     console.error('获取课程失败:', error)
   }
-}
-
-const filterMaterials = () => {
-  if (!selectedCourse.value) {
-    filteredMaterials.value = [...materials.value]
-    return
-  }
-  
-  filteredMaterials.value = materials.value.filter(m => 
-    m.courseId === parseInt(selectedCourse.value)
-  )
-}
-
-const debouncedSearch = () => {
-  clearTimeout(window.searchTimer)
-  window.searchTimer = setTimeout(() => {
-    if (!searchKeyword.value.trim()) {
-      filterMaterials()
-      return
-    }
-    
-    const keyword = searchKeyword.value.toLowerCase()
-    filteredMaterials.value = materials.value.filter(m => 
-      m.name.toLowerCase().includes(keyword) || 
-      m.fileName.toLowerCase().includes(keyword)
-    )
-  }, 300)
 }
 
 const toggleLike = async (material) => {
@@ -189,21 +225,11 @@ const viewMaterial = (materialId) => {
   router.push(`/material/${materialId}`)
 }
 
-const getFileIcon = (fileType) => {
-  const icons = {
-    '.pdf': '📄',
-    '.docx': '📝',
-    '.pptx': '📊',
-    '.jpg': '🖼️',
-    '.jpeg': '🖼️',
-    '.png': '🖼️'
-  }
-  return icons[fileType] || '📁'
-}
+const getFileLabel = (fileType) => String(fileType || 'FILE').replace('.', '').toUpperCase()
 
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
+const getCategoryLabel = (category) => {
+  const matched = materialCategories.find((item) => item.value === category)
+  return matched ? matched.label : '未分类'
 }
 
 onMounted(() => {
@@ -214,156 +240,64 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.materials-page {
-  min-height: 100vh;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--spacing-md);
+.filters-wrap {
   flex-wrap: wrap;
-  margin-bottom: var(--spacing-lg);
-}
-
-.page-title-left {
-  text-align: left;
-  margin: 0;
-}
-
-.filters {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.select {
-  max-width: 260px;
 }
 
 .search-input {
-  width: min(52vw, 320px);
-}
-
-.loading,
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: var(--gray-700);
-}
-
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  min-width: 240px;
+  flex: 1;
 }
 
 .material-card {
   cursor: pointer;
 }
 
-.material-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.file-icon {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.icon {
-  font-size: 3rem;
-}
-
-.material-info {
-  margin-bottom: 1rem;
-}
-
-.material-name {
-  color: var(--gray-900);
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-}
-
-.file-name {
-  color: var(--gray-700);
-  font-size: 0.9rem;
-  margin: 0.25rem 0;
-}
-
-.file-meta {
+.material-meta {
   display: flex;
-  gap: 1rem;
-  font-size: 0.8rem;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.material-description,
+.material-version-note {
+  margin: 0;
   color: var(--gray-700);
-  margin: 0.5rem 0;
+  line-height: 1.7;
 }
 
-.description {
-  color: var(--gray-700);
-  font-size: 0.9rem;
-  margin: 0.75rem 0 0 0;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.material-version-note {
+  color: var(--gray-600);
+  font-size: 13px;
 }
 
-.material-stats {
+.material-stats,
+.tag-row {
   display: flex;
-  justify-content: space-around;
-  padding-top: 1rem;
-  border-top: 1px solid var(--gray-200);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
+.soft-badge {
+  background: rgba(23, 32, 51, 0.06);
+  color: var(--ink-soft);
+  border-color: rgba(23, 32, 51, 0.06);
+}
+
+.strong-badge {
+  background: rgba(44, 96, 214, 0.12);
+  color: #2c60d6;
+}
+
+.tag-chip {
+  display: inline-flex;
+  min-height: 28px;
   align-items: center;
-  gap: 0.25rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-}
-
-.stat-item:hover {
-  background-color: rgba(22, 35, 58, 0.06);
-}
-
-.stat-item.like.active {
-  color: var(--danger-color);
-}
-
-.stat-item.favorite.active {
-  color: var(--warning-color);
-}
-
-.stat-icon {
-  font-size: 1.2rem;
-}
-
-@media (max-width: 768px) {
-  .materials-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .filters {
-    flex-direction: column;
-  }
-  
-  .search-input {
-    width: 100%;
-  }
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(15, 139, 132, 0.10);
+  color: #0f6962;
+  font-size: 12px;
+  font-weight: 700;
 }
 </style>

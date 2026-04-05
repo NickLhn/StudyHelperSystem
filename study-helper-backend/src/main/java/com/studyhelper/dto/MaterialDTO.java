@@ -1,10 +1,15 @@
 package com.studyhelper.dto;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyhelper.entity.Material;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class MaterialDTO {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private Long id;
     private String name;
@@ -14,6 +19,10 @@ public class MaterialDTO {
     private Long fileSize;
     private String fileSizeFormatted;
     private String description;
+    private String category;
+    private List<String> tags;
+    private String versionLabel;
+    private String versionNote;
     private Long userId;
     private String username;
     private Long courseId;
@@ -36,6 +45,10 @@ public class MaterialDTO {
         dto.setFileSize(material.getFileSize());
         dto.setFileSizeFormatted(formatFileSize(material.getFileSize()));
         dto.setDescription(material.getDescription());
+        dto.setCategory(material.getCategory());
+        dto.setTags(parseTags(material.getTags()));
+        dto.setVersionLabel(material.getVersionLabel());
+        dto.setVersionNote(material.getVersionNote());
         dto.setUserId(material.getUser().getId());
         dto.setUsername(material.getUser().getUsername());
         if (material.getCourse() != null) {
@@ -47,6 +60,19 @@ public class MaterialDTO {
         dto.setFavoriteCount(material.getFavoriteCount());
         dto.setCreatedAt(material.getCreatedAt());
         return dto;
+    }
+
+    private static List<String> parseTags(String rawTags) {
+        if (rawTags == null || rawTags.isBlank()) {
+            return List.of();
+        }
+        try {
+            if (rawTags.trim().startsWith("[")) {
+                return OBJECT_MAPPER.readValue(rawTags, new TypeReference<List<String>>() {});
+            }
+        } catch (Exception ignored) {
+        }
+        return List.of(rawTags.split(","));
     }
 
     private static String formatFileSize(Long size) {
@@ -119,6 +145,38 @@ public class MaterialDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public String getVersionLabel() {
+        return versionLabel;
+    }
+
+    public void setVersionLabel(String versionLabel) {
+        this.versionLabel = versionLabel;
+    }
+
+    public String getVersionNote() {
+        return versionNote;
+    }
+
+    public void setVersionNote(String versionNote) {
+        this.versionNote = versionNote;
     }
 
     public Long getUserId() {

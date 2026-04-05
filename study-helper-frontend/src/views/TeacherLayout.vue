@@ -1,449 +1,276 @@
 <template>
-  <div class="teacher-container">
-    <div class="teacher-layout">
-      <!-- 左侧导航栏 -->
-      <aside class="teacher-sidebar">
-        <div class="sidebar-header">
-          <div class="logo-container">
-            <router-link to="/teacher/dashboard" class="logo-link">
-              <div class="logo-icon">📚</div>
-              <div class="logo-text">学习辅助系统</div>
-            </router-link>
-          </div>
-          <div class="user-info">
-            <router-link to="/profile" class="avatar-btn">
-              <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="avatar" />
-              <div v-else class="avatar-fallback">{{ avatarFallback }}</div>
-            </router-link>
-            <div class="welcome-sub">{{ userDisplayName }}</div>
-          </div>
+  <div class="app-shell">
+    <button
+      class="edu-btn edu-btn-secondary shell-menu-btn"
+      type="button"
+      @click="sidebarOpen = true"
+    >
+      菜单
+    </button>
+
+    <div v-if="sidebarOpen" class="shell-overlay" @click="sidebarOpen = false"></div>
+
+    <aside class="app-sidebar" :class="{ open: sidebarOpen }">
+      <router-link to="/teacher/dashboard" class="app-brand">
+        <span class="app-brand-mark">TH</span>
+        <span class="app-brand-copy">
+          <span class="app-brand-title">学习辅助系统</span>
+          <span class="app-brand-subtitle">Teacher Studio</span>
+        </span>
+      </router-link>
+
+      <div class="app-user-card">
+        <router-link to="/profile" class="app-avatar" aria-label="个人中心">
+          <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" />
+          <span v-else>{{ avatarFallback }}</span>
+        </router-link>
+        <div class="app-user-copy">
+          <div class="app-user-name">{{ userDisplayName }}</div>
+          <div class="app-user-role">教师工作台</div>
         </div>
-        
-        <nav class="sidebar-nav">
-          <router-link to="/teacher/dashboard" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">仪表盘</span>
-          </router-link>
-          <router-link to="/teacher/courses" class="nav-item">
-            <span class="nav-icon">📚</span>
-            <span class="nav-text">课程管理</span>
-          </router-link>
-          <router-link to="/teacher/tasks" class="nav-item">
-            <span class="nav-icon">✅</span>
-            <span class="nav-text">作业管理</span>
-          </router-link>
-          <router-link to="/teacher/quizzes" class="nav-item">
-            <span class="nav-icon">📝</span>
-            <span class="nav-text">测验管理</span>
-          </router-link>
-          <router-link to="/teacher/materials" class="nav-item">
-            <span class="nav-icon">📁</span>
-            <span class="nav-text">资料管理</span>
-          </router-link>
-        </nav>
-        
-        <div class="sidebar-footer">
-          <router-link to="/settings" class="nav-item">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">设置</span>
-          </router-link>
-          <button class="nav-item logout" type="button" @click="handleLogout">
-            <span class="nav-icon">⏻</span>
-            <span class="nav-text">退出</span>
-          </button>
+      </div>
+
+      <nav class="app-nav">
+        <router-link
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="app-nav-link"
+          :class="{ active: isActive(item) }"
+        >
+          <span class="app-nav-badge">{{ item.badge }}</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">{{ item.label }}</span>
+            <span class="app-nav-subtitle">{{ item.subtitle }}</span>
+          </span>
+        </router-link>
+      </nav>
+
+      <div class="app-sidebar-footer">
+        <router-link to="/settings" class="app-nav-link" :class="{ active: route.path === '/settings' }">
+          <span class="app-nav-badge">ST</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">系统设置</span>
+            <span class="app-nav-subtitle">账户与通知</span>
+          </span>
+        </router-link>
+        <button type="button" class="app-nav-link" @click="handleLogout">
+          <span class="app-nav-badge">EX</span>
+          <span class="app-nav-copy">
+            <span class="app-nav-title">退出登录</span>
+            <span class="app-nav-subtitle">安全结束当前会话</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar-meta">
+          <h1 class="app-topbar-title">{{ pageMeta.title }}</h1>
+          <p class="app-topbar-copy">{{ pageMeta.subtitle }}</p>
         </div>
-      </aside>
-      
-      <!-- 右侧内容区 -->
-      <main class="teacher-content">
-        <header class="content-header">
-          <h1 class="page-title">{{ pageTitle }}</h1>
-          <div class="header-actions">
-            <router-link to="/messages" class="icon-btn" aria-label="消息中心">
-              <span class="icon">💬</span>
-              <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
-            </router-link>
-            
-            <div class="create-wrap">
-              <button class="icon-btn" type="button" aria-label="快捷创建" @click="toggleCreate">
-                <span class="icon">＋</span>
-              </button>
-              <div v-if="createOpen" class="create-panel">
-                <router-link class="create-item" to="/course/create" @click="closeCreate">创建课程</router-link>
-                <router-link class="create-item" to="/task/create" @click="closeCreate">创建任务</router-link>
-                <router-link class="create-item" to="/quiz/create" @click="closeCreate">创建测验</router-link>
-                <router-link class="create-item" to="/material/upload" @click="closeCreate">上传资料</router-link>
-              </div>
+
+        <div class="app-topbar-actions">
+          <span class="chip">教师端</span>
+          <router-link to="/messages" class="edu-btn edu-btn-secondary message-link">
+            <span>消息中心</span>
+            <span v-if="notificationCount > 0" class="message-count">{{ notificationCount }}</span>
+          </router-link>
+
+          <div class="create-box">
+            <button type="button" class="edu-btn edu-btn-primary" @click="createOpen = !createOpen">
+              快捷创建
+            </button>
+            <div v-if="createOpen" class="create-panel">
+              <router-link v-for="item in createItems" :key="item.path" :to="item.path" class="create-item">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.subtitle }}</span>
+              </router-link>
             </div>
           </div>
-        </header>
-        
-        <div class="content-body">
+        </div>
+      </header>
+
+      <div class="app-content">
+        <div class="page-container">
           <router-view />
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { notificationApi } from '../api/notification'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const unreadCount = ref(0)
+const sidebarOpen = ref(false)
 const createOpen = ref(false)
+const notificationCount = ref(0)
 
-const userDisplayName = computed(() => userStore.user?.nickname || userStore.user?.username || '')
+const navItems = [
+  { path: '/teacher/dashboard', label: '仪表盘', subtitle: '教学总览与节奏', badge: 'DB' },
+  { path: '/teacher/courses', label: '课程管理', subtitle: '课程与班级信息', badge: 'CR' },
+  { path: '/teacher/students', label: '学生管理', subtitle: '班级成员与名单', badge: 'ST' },
+  { path: '/teacher/tasks', label: '任务管理', subtitle: '发布任务与跟进', badge: 'TK' },
+  { path: '/teacher/homeworks', label: '作业中心', subtitle: '发布作业与批改', badge: 'HW' },
+  { path: '/teacher/quizzes', label: '测验管理', subtitle: '测验与自动判分', badge: 'QZ' },
+  { path: '/teacher/grades', label: '成绩中心', subtitle: '测验成绩与趋势', badge: 'GD' },
+  { path: '/teacher/materials', label: '资料中心', subtitle: '资源上传与管理', badge: 'MT' }
+]
+
+const createItems = [
+  { path: '/teacher/course/create', label: '创建课程', subtitle: '新建教学课程' },
+  { path: '/teacher/task/create', label: '发布任务', subtitle: '安排任务与截止时间' },
+  { path: '/teacher/homework/create', label: '创建作业', subtitle: '配置自动批改规则' },
+  { path: '/teacher/quiz/create', label: '创建测验', subtitle: '配置题目与分值' },
+  { path: '/teacher/material/upload', label: '上传资料', subtitle: '补充课程资源' }
+]
+
+const pageMetaMap = {
+  '/teacher/dashboard': {
+    title: '教学仪表盘',
+    subtitle: '把课程、任务、测验和资料放进同一条教学工作流里。'
+  },
+  '/teacher/courses': {
+    title: '课程管理',
+    subtitle: '在统一的课程画布里整理班级信息、资源和教学节奏。'
+  },
+  '/teacher/tasks': {
+    title: '任务管理',
+    subtitle: '发布任务、追踪执行状态，并让课程安排更清晰。'
+  },
+  '/teacher/homeworks': {
+    title: '作业中心',
+    subtitle: '让作业发布、自动批改、学生提交和教师复核进入同一条工作流。'
+  },
+  '/teacher/students': {
+    title: '学生管理',
+    subtitle: '集中查看各课程学生名单，减少在多个详情页之间来回切换。'
+  },
+  '/teacher/quizzes': {
+    title: '测验管理',
+    subtitle: '管理题目、发布时间和自动批改的测验流程。'
+  },
+  '/teacher/grades': {
+    title: '成绩中心',
+    subtitle: '先用真实测验数据构建成绩概览，为后续作业批改中心打基础。'
+  },
+  '/teacher/homework': {
+    title: '作业详情',
+    subtitle: '查看提交情况、题目正确率，并对主观题进行教师复核。'
+  },
+  '/teacher/materials': {
+    title: '资料中心',
+    subtitle: '让教学资源像资料馆一样清楚、易找、可追踪。'
+  }
+}
+
+const userDisplayName = computed(() => userStore.user?.nickname || userStore.user?.username || '教师')
 const avatarUrl = computed(() => userStore.user?.avatar || '')
-const avatarFallback = computed(() => (userDisplayName.value || 'U').slice(0, 1).toUpperCase())
+const avatarFallback = computed(() => (userDisplayName.value || 'T').slice(0, 1).toUpperCase())
 
-const pageTitle = computed(() => {
-  const path = route.path
-  if (path.includes('/teacher/dashboard')) return '仪表盘'
-  if (path.includes('/teacher/courses')) return '课程管理'
-  if (path.includes('/teacher/tasks')) return '作业管理'
-  if (path.includes('/teacher/quizzes')) return '测验管理'
-  if (path.includes('/teacher/materials')) return '资料管理'
-  return '教师端'
+const pageMeta = computed(() => {
+  const matchedKey = Object.keys(pageMetaMap).find((key) => route.path.startsWith(key))
+  return matchedKey ? pageMetaMap[matchedKey] : {
+    title: '教师工作台',
+    subtitle: '在这里组织你的教学内容与课堂事务。'
+  }
 })
 
-const toggleCreate = () => {
-  createOpen.value = !createOpen.value
-}
-
-const closeCreate = () => {
-  createOpen.value = false
-}
+const isActive = (item) => route.path === item.path || route.path.startsWith(`${item.path}/`)
 
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+const loadNotificationSummary = async () => {
+  if (!userStore.user?.id) return
+  try {
+    const response = await notificationApi.getNotifications(userStore.user.id, 8)
+    if (response.data.code === 200) {
+      notificationCount.value = Number(response.data.data.summary?.totalCount || 0)
+    }
+  } catch (error) {
+    notificationCount.value = 0
+  }
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    sidebarOpen.value = false
+    createOpen.value = false
+    loadNotificationSummary()
+  }
+)
+
+onMounted(loadNotificationSummary)
 </script>
 
 <style scoped>
-.teacher-container {
-  min-height: 100vh;
-  background-color: #f7f9fc;
-}
-
-/* 左右布局样式 */
-.teacher-layout {
-  display: flex;
-  min-height: 100vh;
-  background: #f7f9fc;
-}
-
-/* 左侧导航栏 */
-.teacher-sidebar {
-  width: 280px;
-  background: #ffffff;
-  border-right: 1px solid #eef2f7;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 100;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-}
-
-.sidebar-header {
-  padding: 1.5rem 1.25rem;
-  border-bottom: 1px solid #eef2f7;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.logo-container {
-  width: 100%;
-}
-
-.logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  color: inherit;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex: 0 0 auto;
-}
-
-.logo-text {
-  font-weight: 800;
-  color: #111827;
-  font-size: 1.1rem;
-  flex: 1;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-}
-
-.avatar-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  overflow: hidden;
+.message-link {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  background: #f3f4f6;
-  flex: 0 0 auto;
+  gap: 8px;
 }
 
-.avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  color: #111827;
-  font-size: 1.25rem;
-}
-
-.welcome-sub {
-  color: #6b7280;
-  font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 1rem 0;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  text-decoration: none;
-  color: #4b5563;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-  text-align: left;
-}
-
-.nav-item:hover {
-  background: #f3f4f6;
-  color: #111827;
-}
-
-.nav-item.active {
-  background: #eef2ff;
-  color: #2563eb;
-  font-weight: 700;
-}
-
-.nav-icon {
-  font-size: 1.1rem;
-  flex: 0 0 auto;
-}
-
-.nav-text {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.sidebar-footer {
-  border-top: 1px solid #eef2f7;
-  padding: 1rem 0;
-}
-
-.nav-item.logout {
-  color: #ef4444;
-}
-
-.nav-item.logout:hover {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-/* 右侧内容区 */
-.teacher-content {
-  flex: 1;
-  margin-left: 280px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-header {
-  background: #ffffff;
-  border-bottom: 1px solid #eef2f7;
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.content-header .page-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #111827;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.icon-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: #f3f4f6;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  text-decoration: none;
-  color: inherit;
-  border: 0;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.icon-btn:hover {
-  background: #e5e7eb;
-}
-
-.icon {
-  font-size: 18px;
-}
-
-.badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
+.message-count {
+  min-width: 20px;
+  height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #ef4444;
+  background: #c64c4c;
   color: #fff;
   font-size: 12px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
 }
 
-.create-wrap {
+.create-box {
   position: relative;
 }
 
 .create-panel {
   position: absolute;
   right: 0;
-  top: 48px;
-  min-width: 180px;
-  background: #ffffff;
-  border: 1px solid #eef2f7;
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-  padding: 0.5rem;
+  top: calc(100% + 10px);
+  width: 260px;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(23, 32, 51, 0.10);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-lg);
   display: grid;
-  gap: 0.25rem;
-  z-index: 1000;
+  gap: 6px;
+  z-index: 30;
 }
 
 .create-item {
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
-  text-decoration: none;
-  color: #111827;
-  font-weight: 700;
-  transition: all 0.2s ease;
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--ink);
 }
 
 .create-item:hover {
-  background: #f3f4f6;
+  background: rgba(44, 96, 214, 0.08);
+  text-decoration: none;
 }
 
-.content-body {
-  flex: 1;
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* 响应式设计 */
-@media (max-width: 1024px) {
-  .content-body {
-    padding: 1.25rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .teacher-sidebar {
-    width: 240px;
-  }
-  
-  .teacher-content {
-    margin-left: 240px;
-  }
-  
-  .content-body {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .teacher-sidebar {
-    width: 100%;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-  
-  .teacher-sidebar.open {
-    transform: translateX(0);
-  }
-  
-  .teacher-content {
-    margin-left: 0;
-  }
+.create-item span {
+  color: var(--gray-500);
+  font-size: 12px;
 }
 </style>

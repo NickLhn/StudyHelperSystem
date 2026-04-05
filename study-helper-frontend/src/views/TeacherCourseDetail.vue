@@ -7,12 +7,17 @@
           <div class="name">{{ course?.name || '课程' }}</div>
           <div class="meta">
             <span>{{ course?.categoryLabel || '-' }}</span>
+            <span v-if="course?.statusLabel">· {{ course.statusLabel }}</span>
+            <span v-if="course?.semesterLabel">· {{ course.semesterLabel }}</span>
             <span v-if="course?.teacher">· {{ course.teacher }}</span>
           </div>
         </div>
       </div>
 
       <div class="hright">
+        <button class="btn" type="button" @click="toggleArchive" :disabled="loading || !course">
+          {{ course?.status === 'ARCHIVED' ? '恢复课程' : '归档课程' }}
+        </button>
         <div class="code-card">
           <div class="code-label">课程邀请码</div>
           <div class="code-row">
@@ -44,9 +49,10 @@
     </div>
 
     <div class="actions">
-      <router-link class="action" :to="`/material/upload?courseId=${courseId}`">发布资料</router-link>
-      <router-link class="action" :to="`/task/create?courseId=${courseId}`">发布作业</router-link>
-      <router-link class="action" :to="`/quiz/create?courseId=${courseId}`">发布考试</router-link>
+      <router-link class="action" :to="`/teacher/material/upload?courseId=${courseId}`">发布资料</router-link>
+      <router-link class="action" :to="`/teacher/task/create?courseId=${courseId}`">新建任务</router-link>
+      <router-link class="action" :to="`/teacher/homework/create?courseId=${courseId}`">发布作业</router-link>
+      <router-link class="action" :to="`/teacher/quiz/create?courseId=${courseId}`">发布考试</router-link>
     </div>
 
     <div class="grid">
@@ -255,6 +261,20 @@ const refreshCode = async () => {
   const response = await courseApi.refreshInvitationCode(courseId.value, userStore.user.id)
   if (response.data.code === 200) {
     course.value = { ...(course.value || {}), invitationCode: response.data.data.invitationCode }
+  }
+}
+
+const toggleArchive = async () => {
+  if (!course.value) return
+  const targetStatus = course.value.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED'
+  const ok = confirm(targetStatus === 'ARCHIVED' ? '确定归档这门课程吗？归档后新学生无法通过邀请码加入。' : '确定恢复这门课程吗？')
+  if (!ok) return
+
+  const response = await courseApi.updateCourseStatus(courseId.value, userStore.user.id, targetStatus)
+  if (response.data.code === 200) {
+    course.value = response.data.data
+  } else {
+    error.value = response.data.message
   }
 }
 

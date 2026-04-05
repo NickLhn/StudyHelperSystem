@@ -59,6 +59,26 @@ public class CourseController {
         }
     }
 
+    @GetMapping("/list-by-status")
+    public ApiResponse<List<CourseDTO>> getUserCoursesByStatus(@RequestParam Long userId, @RequestParam Course.Status status) {
+        accessGuard.requireSelfOrAdmin(userId);
+        try {
+            return ApiResponse.success(courseService.getUserCoursesByStatus(userId, status));
+        } catch (RuntimeException e) {
+            return ApiResponse.error(400, e.getMessage());
+        }
+    }
+
+    @GetMapping("/student/list-by-status")
+    public ApiResponse<List<CourseDTO>> getStudentCoursesByStatus(@RequestParam Long userId, @RequestParam Course.Status status) {
+        accessGuard.requireSelfOrAdmin(userId);
+        try {
+            return ApiResponse.success(courseService.getStudentCoursesByStatus(userId, status));
+        } catch (RuntimeException e) {
+            return ApiResponse.error(400, e.getMessage());
+        }
+    }
+
     @PostMapping("/join")
     public ApiResponse<CourseDTO> joinCourse(@RequestParam Long userId, @RequestParam String invitationCode) {
         accessGuard.requireSelfOrAdmin(userId);
@@ -76,6 +96,19 @@ public class CourseController {
         try {
             List<CourseDTO> courses = courseService.getUserCoursesByCategory(userId, category);
             return ApiResponse.success(courses);
+        } catch (RuntimeException e) {
+            return ApiResponse.error(400, e.getMessage());
+        }
+    }
+
+    @GetMapping("/list-by-category-and-status")
+    public ApiResponse<List<CourseDTO>> getUserCoursesByCategoryAndStatus(
+            @RequestParam Long userId,
+            @RequestParam Course.Category category,
+            @RequestParam Course.Status status) {
+        accessGuard.requireSelfOrAdmin(userId);
+        try {
+            return ApiResponse.success(courseService.getUserCoursesByCategoryAndStatus(userId, category, status));
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());
         }
@@ -146,6 +179,19 @@ public class CourseController {
         try {
             CourseDTO course = courseService.updateCourse(courseId, userId, request);
             return ApiResponse.success("课程更新成功", course);
+        } catch (RuntimeException e) {
+            return ApiResponse.error(400, e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{courseId}/status")
+    public ApiResponse<CourseDTO> updateCourseStatus(
+            @PathVariable Long courseId,
+            @RequestParam Long userId,
+            @RequestParam Course.Status status) {
+        accessGuard.requireSelfOrAdmin(userId);
+        try {
+            return ApiResponse.success("课程状态更新成功", courseService.updateCourseStatus(courseId, userId, status));
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());
         }

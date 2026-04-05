@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyhelper.dto.QuestionDTO;
 import com.studyhelper.dto.QuizDTO;
+import com.studyhelper.dto.QuizSubmitRequest;
 import com.studyhelper.entity.*;
 import com.studyhelper.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,7 +46,9 @@ public class QuizService {
     // 创建测验
     @Transactional
     public QuizDTO createQuiz(Long userId, String title, String description, 
-                             Integer totalTime, Long courseId, List<Map<String, Object>> questions) {
+                             Integer totalTime, Long courseId, Integer maxAttempts,
+                             Boolean shuffleQuestions, Boolean autoSaveEnabled,
+                             List<Map<String, Object>> questions) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
@@ -52,6 +57,9 @@ public class QuizService {
         quiz.setDescription(description);
         quiz.setTotalTime(totalTime);
         quiz.setQuestionCount(questions.size());
+        quiz.setMaxAttempts(maxAttempts == null || maxAttempts < 1 ? 1 : maxAttempts);
+        quiz.setShuffleQuestions(Boolean.TRUE.equals(shuffleQuestions));
+        quiz.setAutoSaveEnabled(!Boolean.FALSE.equals(autoSaveEnabled));
         quiz.setType(Quiz.Type.PRACTICE);
         quiz.setStatus(Quiz.Status.DRAFT);
         quiz.setUser(user);
@@ -95,17 +103,24 @@ public class QuizService {
     }
 
     // 获取用户可访问的测验
+    @Transactional(readOnly = true)
     public List<QuizDTO> getUserQuizzes(Long userId) {
         List<Quiz> quizzes = quizRepository.findAccessibleQuizzes(userId);
-        return quizzes.stream().map(QuizDTO::fromQuiz).collect(Collectors.toList());
+        return quizzes.stream()
+                .map(quiz -> toQuizDTOForUser(quiz, userId))
+                .collect(Collectors.toList());
     }
 
     // 获取可参加的测验
+    @Transactional(readOnly = true)
     public List<QuizDTO> getAvailableQuizzes(Long userId) {
         List<Quiz> quizzes = quizRepository.findAvailableQuizzes(userId);
-        return quizzes.stream().map(QuizDTO::fromQuiz).collect(Collectors.toList());
+        return quizzes.stream()
+                .map(quiz -> toQuizDTOForUser(quiz, userId))
+                .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<QuizDTO> getCourseQuizzes(Long userId, Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("课程不存在"));
@@ -118,7 +133,9 @@ public class QuizService {
         }
 
         List<Quiz> quizzes = quizRepository.findByCourseId(courseId);
-        return quizzes.stream().map(QuizDTO::fromQuiz).collect(Collectors.toList());
+        return quizzes.stream()
+                .map(quiz -> toQuizDTOForUser(quiz, userId))
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -154,6 +171,7 @@ public class QuizService {
     }
 
     // 获取测验详情（包括题目）
+    @Transactional(readOnly = true)
     public Map<String, Object> getQuizDetail(Long quizId, Long userId) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("测验不存在"));
@@ -162,13 +180,16 @@ public class QuizService {
             throw new RuntimeException("无权访问该测验");
         }
 
+        QuizDTO quizDTO = toQuizDTOForUser(quiz, userId);
+        if (!isTeacherOrOwner(quiz, userId) && quizDTO.isAttemptLimitReached()) {
+            throw new RuntimeException("已达到该测验的作答次数上限");
+        }
+
         List<Question> questions = questionRepository.findByQuizIdOrderByCreatedAtAsc(quizId);
-        List<QuestionDTO> questionDTOs = questions.stream()
-                .map(QuestionDTO::fromQuestion)
-                .collect(Collectors.toList());
+        List<QuestionDTO> questionDTOs = buildQuestionDTOs(quiz, userId, questions);
 
         Map<String, Object> result = Map.of(
-            "quiz", QuizDTO.fromQuiz(quiz),
+            "quiz", quizDTO,
             "questions", questionDTOs
         );
         return result;
@@ -176,7 +197,7 @@ public class QuizService {
 
     // 提交测验答案并自动批改
     @Transactional
-    public Map<String, Object> submitQuiz(Long userId, Long quizId, Map<String, String> userAnswers) {
+    public Map<String, Object> submitQuiz(Long userId, Long quizId, QuizSubmitRequest request) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("测验不存在"));
 
@@ -186,6 +207,16 @@ public class QuizService {
         if (!canAccessQuiz(quiz, userId)) {
             throw new RuntimeException("无权提交该测验");
         }
+
+        long attemptsUsed = quizRecordRepository.countByUserIdAndQuizId(userId, quizId);
+        int maxAttempts = quiz.getMaxAttempts() == null || quiz.getMaxAttempts() < 1 ? 1 : quiz.getMaxAttempts();
+        if (!isTeacherOrOwner(quiz, userId) && attemptsUsed >= maxAttempts) {
+            throw new RuntimeException("已达到该测验的作答次数上限");
+        }
+
+        Map<String, String> userAnswers = request == null || request.getAnswers() == null
+                ? Map.of()
+                : request.getAnswers();
 
         List<Question> questions = questionRepository.findByQuizIdOrderByCreatedAtAsc(quizId);
         int totalScore = questions.stream().mapToInt(Question::getScore).sum();
@@ -214,22 +245,28 @@ public class QuizService {
         record.setAnswers(writeValueAsString(userAnswers));
         record.setWrongQuestions(writeValueAsString(wrongQuestionIds));
         record.setPassed(accuracy >= 0.6); // 60%及格
-        record.setStartedAt(LocalDateTime.now());
-        record.setFinishedAt(LocalDateTime.now());
+        int timeUsed = normalizeTimeUsed(request == null ? null : request.getTimeUsed(), quiz.getTotalTime());
+        LocalDateTime finishedAt = LocalDateTime.now();
+        record.setTimeUsed(timeUsed);
+        record.setStartedAt(finishedAt.minusSeconds(timeUsed));
+        record.setFinishedAt(finishedAt);
 
         QuizRecord savedRecord = quizRecordRepository.save(record);
 
         return Map.of(
             "recordId", savedRecord.getId(),
+            "attemptNumber", attemptsUsed + 1,
             "score", userScore,
             "totalScore", totalScore,
             "accuracy", accuracy,
             "isPassed", record.getPassed(),
-            "wrongQuestions", wrongQuestionIds
+            "wrongQuestions", wrongQuestionIds,
+            "timeUsed", timeUsed
         );
     }
 
     // 获取用户的测验记录
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getUserRecords(Long userId) {
         return quizRecordRepository.findByUserId(userId).stream()
                 .map(record -> {
@@ -241,13 +278,37 @@ public class QuizService {
                     recordMap.put("totalScore", record.getTotalScore());
                     recordMap.put("accuracy", record.getAccuracy());
                     recordMap.put("isPassed", record.getPassed());
+                    recordMap.put("timeUsed", record.getTimeUsed());
                     recordMap.put("createdAt", record.getCreatedAt());
                     return recordMap;
                 })
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRecordDetail(Long userId, Long recordId) {
+        QuizRecord record = quizRecordRepository.findByIdAndUserId(recordId, userId)
+                .orElseThrow(() -> new RuntimeException("测验记录不存在"));
+
+        List<Long> wrongQuestionIds = parseWrongQuestionIds(record.getWrongQuestions());
+        QuizDTO quizDTO = toQuizDTOForUser(record.getQuiz(), userId);
+
+        return Map.of(
+                "id", record.getId(),
+                "quiz", quizDTO,
+                "score", record.getScore(),
+                "totalScore", record.getTotalScore(),
+                "accuracy", record.getAccuracy(),
+                "isPassed", record.getPassed(),
+                "timeUsed", record.getTimeUsed() == null ? 0 : record.getTimeUsed(),
+                "answers", parseAnswerMap(record.getAnswers()),
+                "wrongQuestions", wrongQuestionIds,
+                "createdAt", record.getCreatedAt()
+        );
+    }
+
     // 获取错题记录
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getWrongQuestions(Long userId) {
         List<QuizRecord> records = quizRecordRepository.findRecordsWithWrongQuestions(userId);
         List<Map<String, Object>> wrongQuestions = new ArrayList<>();
@@ -283,9 +344,70 @@ public class QuizService {
         }
     }
 
+    private QuizDTO toQuizDTOForUser(Quiz quiz, Long userId) {
+        QuizDTO dto = QuizDTO.fromQuiz(quiz);
+        int attemptsUsed = (int) quizRecordRepository.countByUserIdAndQuizId(userId, quiz.getId());
+        int maxAttempts = quiz.getMaxAttempts() == null || quiz.getMaxAttempts() < 1 ? 1 : quiz.getMaxAttempts();
+        dto.setAttemptsUsed(attemptsUsed);
+        dto.setRemainingAttempts(Math.max(0, maxAttempts - attemptsUsed));
+        dto.setAttemptLimitReached(attemptsUsed >= maxAttempts);
+        return dto;
+    }
+
+    private List<QuestionDTO> buildQuestionDTOs(Quiz quiz, Long userId, List<Question> sourceQuestions) {
+        boolean includeAnswer = isTeacherOrOwner(quiz, userId);
+        List<Question> questions = new ArrayList<>(sourceQuestions);
+        if (Boolean.TRUE.equals(quiz.getShuffleQuestions()) && questions.size() > 1 && !isTeacherOrOwner(quiz, userId)) {
+            int seed = Math.floorMod(Objects.hash(quiz.getId(), userId), questions.size() - 1) + 1;
+            Collections.rotate(questions, seed);
+        }
+        return questions.stream()
+                .map(question -> QuestionDTO.fromQuestion(question, includeAnswer))
+                .collect(Collectors.toList());
+    }
+
+    private int normalizeTimeUsed(Integer providedTimeUsed, Integer totalTimeMinutes) {
+        int fallback = 0;
+        if (providedTimeUsed == null) {
+            return fallback;
+        }
+        int normalized = Math.max(0, providedTimeUsed);
+        if (totalTimeMinutes != null && totalTimeMinutes > 0) {
+            return Math.min(normalized, totalTimeMinutes * 60);
+        }
+        return normalized;
+    }
+
+    private List<Long> parseWrongQuestionIds(String rawWrongQuestions) {
+        try {
+            if (rawWrongQuestions == null || rawWrongQuestions.isBlank()) {
+                return List.of();
+            }
+            return objectMapper.readValue(rawWrongQuestions, new TypeReference<List<Long>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private Map<String, String> parseAnswerMap(String rawAnswers) {
+        try {
+            if (rawAnswers == null || rawAnswers.isBlank()) {
+                return Map.of();
+            }
+            return objectMapper.readValue(rawAnswers, new TypeReference<Map<String, String>>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
     private boolean canAccessQuiz(Quiz quiz, Long userId) {
         return quiz.getUser().getId().equals(userId) ||
                 (quiz.getCourse() != null && quiz.getCourse().getUser().getId().equals(userId)) ||
                 (quiz.getCourse() != null && studentCourseRepository.existsByStudentIdAndCourseId(userId, quiz.getCourse().getId()));
+    }
+
+    private boolean isTeacherOrOwner(Quiz quiz, Long userId) {
+        return quiz.getUser().getId().equals(userId) ||
+                (quiz.getCourse() != null && quiz.getCourse().getUser().getId().equals(userId));
     }
 }

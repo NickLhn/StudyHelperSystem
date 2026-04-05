@@ -3,6 +3,7 @@ package com.studyhelper.controller;
 import com.studyhelper.config.AccessGuard;
 import com.studyhelper.dto.ApiResponse;
 import com.studyhelper.dto.QuizDTO;
+import com.studyhelper.dto.QuizSubmitRequest;
 import com.studyhelper.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -26,11 +27,15 @@ public class QuizController {
             @RequestParam String title,
             @RequestParam(required = false) String description,
             @RequestParam(required = false, defaultValue = "0") Integer totalTime,
+            @RequestParam(required = false, defaultValue = "1") Integer maxAttempts,
+            @RequestParam(required = false, defaultValue = "false") Boolean shuffleQuestions,
+            @RequestParam(required = false, defaultValue = "true") Boolean autoSaveEnabled,
             @RequestParam(required = false) Long courseId,
             @RequestBody List<Map<String, Object>> questions) {
         accessGuard.requireSelfOrAdmin(userId);
         try {
-            QuizDTO quiz = quizService.createQuiz(userId, title, description, totalTime, courseId, questions);
+            QuizDTO quiz = quizService.createQuiz(
+                    userId, title, description, totalTime, courseId, maxAttempts, shuffleQuestions, autoSaveEnabled, questions);
             return ApiResponse.success("测验创建成功", quiz);
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());
@@ -112,10 +117,10 @@ public class QuizController {
     public ApiResponse<Map<String, Object>> submitQuiz(
             @PathVariable Long quizId,
             @RequestParam Long userId,
-            @RequestBody Map<String, String> answers) {
+            @RequestBody QuizSubmitRequest request) {
         accessGuard.requireSelfOrAdmin(userId);
         try {
-            Map<String, Object> result = quizService.submitQuiz(userId, quizId, answers);
+            Map<String, Object> result = quizService.submitQuiz(userId, quizId, request);
             return ApiResponse.success("测验提交成功", result);
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());
@@ -130,6 +135,16 @@ public class QuizController {
             return ApiResponse.success(records);
         } catch (RuntimeException e) {
             return ApiResponse.error(400, e.getMessage());
+        }
+    }
+
+    @GetMapping("/records/{recordId}")
+    public ApiResponse<Map<String, Object>> getRecordDetail(@PathVariable Long recordId, @RequestParam Long userId) {
+        accessGuard.requireSelfOrAdmin(userId);
+        try {
+            return ApiResponse.success(quizService.getRecordDetail(userId, recordId));
+        } catch (RuntimeException e) {
+            return ApiResponse.error(404, e.getMessage());
         }
     }
 

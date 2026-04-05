@@ -12,6 +12,9 @@ public class QuizDTO {
     private String description;
     private Integer totalTime;
     private Integer questionCount;
+    private Integer maxAttempts;
+    private Boolean shuffleQuestions;
+    private Boolean autoSaveEnabled;
     private Quiz.Type type;
     private String typeLabel;
     private Quiz.Status status;
@@ -20,6 +23,9 @@ public class QuizDTO {
     private String username;
     private Long courseId;
     private String courseName;
+    private Integer attemptsUsed;
+    private Integer remainingAttempts;
+    private boolean attemptLimitReached;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -30,6 +36,9 @@ public class QuizDTO {
         dto.setDescription(quiz.getDescription());
         dto.setTotalTime(quiz.getTotalTime());
         dto.setQuestionCount(quiz.getQuestionCount());
+        dto.setMaxAttempts(quiz.getMaxAttempts());
+        dto.setShuffleQuestions(Boolean.TRUE.equals(quiz.getShuffleQuestions()));
+        dto.setAutoSaveEnabled(!Boolean.FALSE.equals(quiz.getAutoSaveEnabled()));
         dto.setType(quiz.getType());
         dto.setTypeLabel(quiz.getType().getLabel());
         dto.setStatus(quiz.getStatus());
@@ -83,6 +92,30 @@ public class QuizDTO {
 
     public void setQuestionCount(Integer questionCount) {
         this.questionCount = questionCount;
+    }
+
+    public Integer getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public void setMaxAttempts(Integer maxAttempts) {
+        this.maxAttempts = maxAttempts;
+    }
+
+    public Boolean getShuffleQuestions() {
+        return shuffleQuestions;
+    }
+
+    public void setShuffleQuestions(Boolean shuffleQuestions) {
+        this.shuffleQuestions = shuffleQuestions;
+    }
+
+    public Boolean getAutoSaveEnabled() {
+        return autoSaveEnabled;
+    }
+
+    public void setAutoSaveEnabled(Boolean autoSaveEnabled) {
+        this.autoSaveEnabled = autoSaveEnabled;
     }
 
     public Quiz.Type getType() {
@@ -147,6 +180,30 @@ public class QuizDTO {
 
     public void setCourseName(String courseName) {
         this.courseName = courseName;
+    }
+
+    public Integer getAttemptsUsed() {
+        return attemptsUsed;
+    }
+
+    public void setAttemptsUsed(Integer attemptsUsed) {
+        this.attemptsUsed = attemptsUsed;
+    }
+
+    public Integer getRemainingAttempts() {
+        return remainingAttempts;
+    }
+
+    public void setRemainingAttempts(Integer remainingAttempts) {
+        this.remainingAttempts = remainingAttempts;
+    }
+
+    public boolean isAttemptLimitReached() {
+        return attemptLimitReached;
+    }
+
+    public void setAttemptLimitReached(boolean attemptLimitReached) {
+        this.attemptLimitReached = attemptLimitReached;
     }
 
     public LocalDateTime getCreatedAt() {

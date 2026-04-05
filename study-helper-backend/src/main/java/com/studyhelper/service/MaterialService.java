@@ -2,6 +2,7 @@ package com.studyhelper.service;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.GeneratePresignedUrlRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyhelper.config.OssClientProvider;
 import com.studyhelper.dto.CommentDTO;
 import com.studyhelper.dto.MaterialDTO;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,8 +55,17 @@ public class MaterialService {
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         ".pdf", ".docx", ".pptx", ".jpg", ".jpeg", ".png"
     );
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public MaterialDTO uploadMaterial(Long userId, Long courseId, String name, String description, MultipartFile file) {
+    public MaterialDTO uploadMaterial(Long userId,
+                                      Long courseId,
+                                      String name,
+                                      String description,
+                                      String category,
+                                      String tags,
+                                      String versionLabel,
+                                      String versionNote,
+                                      MultipartFile file) {
         // 验证文件
         validateFile(file);
 
@@ -72,6 +81,10 @@ public class MaterialService {
         material.setFileSize(file.getSize());
         material.setFilePath(filePath);
         material.setDescription(description);
+        material.setCategory(normalizeNullable(category));
+        material.setTags(writeTags(tags));
+        material.setVersionLabel(normalizeNullable(versionLabel));
+        material.setVersionNote(normalizeNullable(versionNote));
         material.setUser(user);
 
         if (courseId != null) {
@@ -85,6 +98,36 @@ public class MaterialService {
 
         Material savedMaterial = materialRepository.save(material);
         return MaterialDTO.fromMaterial(savedMaterial);
+    }
+
+    private String writeTags(String rawTags) {
+        List<String> parsedTags = parseTags(rawTags);
+        try {
+            return parsedTags.isEmpty() ? "[]" : objectMapper.writeValueAsString(parsedTags);
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    private List<String> parseTags(String rawTags) {
+        if (rawTags == null || rawTags.isBlank()) {
+            return List.of();
+        }
+
+        return Arrays.stream(rawTags.split("[,，]"))
+                .map(String::trim)
+                .filter(tag -> !tag.isBlank())
+                .distinct()
+                .limit(8)
+                .collect(Collectors.toList());
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void validateFile(MultipartFile file) {
@@ -151,6 +194,7 @@ public class MaterialService {
         return fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
     }
 
+    @Transactional(readOnly = true)
     public List<MaterialDTO> getAllMaterials(Long userId) {
         List<Material> materials = materialRepository.findAccessibleMaterials(userId);
         return materials.stream()
@@ -160,6 +204,7 @@ public class MaterialService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<MaterialDTO> getMaterialsByCourse(Long courseId, Long userId) {
         List<Material> materials = materialRepository.findByCourseId(courseId);
         return materials.stream()
@@ -172,6 +217,7 @@ public class MaterialService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public MaterialDTO getMaterialById(Long materialId, Long userId) {
         Material material = getAccessibleMaterial(materialId, userId);
         Material enriched = enrichMaterialWithCounts(material);
@@ -294,6 +340,7 @@ public class MaterialService {
     }
 
     // 评论相关方法
+    @Transactional(readOnly = true)
     public List<CommentDTO> getCommentsByMaterial(Long materialId, Long userId) {
         getAccessibleMaterial(materialId, userId);
         List<Comment> comments = commentRepository.findByMaterialIdOrderByCreatedAtDesc(materialId);

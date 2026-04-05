@@ -21,7 +21,14 @@ public class Course {
     @Column(nullable = false)
     private Category category = Category.REQUIRED;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.ACTIVE;
+
     private String teacher;
+
+    @Column(name = "semester_label")
+    private String semesterLabel;
 
     private String schedule;
 
@@ -43,6 +50,9 @@ public class Course {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -63,6 +73,21 @@ public class Course {
         private final String label;
 
         Category(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
+    public enum Status {
+        ACTIVE("进行中"),
+        ARCHIVED("已归档");
+
+        private final String label;
+
+        Status(String label) {
             this.label = label;
         }
 
@@ -95,12 +120,28 @@ public class Course {
         this.category = category;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
     public String getTeacher() {
         return teacher;
     }
 
     public void setTeacher(String teacher) {
         this.teacher = teacher;
+    }
+
+    public String getSemesterLabel() {
+        return semesterLabel;
+    }
+
+    public void setSemesterLabel(String semesterLabel) {
+        this.semesterLabel = semesterLabel;
     }
 
     public String getSchedule() {
@@ -157,5 +198,13 @@ public class Course {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

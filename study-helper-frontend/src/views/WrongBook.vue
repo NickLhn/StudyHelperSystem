@@ -1,159 +1,160 @@
 <template>
-  <div class="wrong-book-container">
-    <nav class="navbar">
-      <div class="nav-brand">学习辅助系统</div>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link">首页</router-link>
-        <router-link to="/quizzes" class="nav-link">在线测验</router-link>
-        <router-link to="/profile" class="nav-link">个人中心</router-link>
-        <button @click="handleLogout" class="btn-logout">退出</button>
+  <div class="page-stack">
+    <section class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Wrong Question Book</span>
+        <h2 class="page-title">把错题整理成一份能持续复习的个人题单</h2>
+        <p class="page-subtitle">现在已经能自动读取测验错题，你可以按测验筛选、标记已掌握，并快速回到测验页继续训练。</p>
       </div>
-    </nav>
-
-    <main class="book-content">
-      <div class="header">
-        <h2>错题本</h2>
-        <p>记录你的知识盲点，反复练习直到掌握</p>
+      <div class="page-actions">
+        <span class="chip">共 {{ filteredQuestions.length }} 题</span>
       </div>
+    </section>
 
-      <div v-if="loading" class="loading">加载中...</div>
-      
-      <div v-else-if="wrongQuestions.length === 0" class="empty-state">
-        <div class="empty-icon">📚</div>
-        <h3>暂无错题记录</h3>
-        <p>完成测验后，错题会自动收录到这里</p>
-        <router-link to="/quizzes" class="btn-go-quizzes">去参加测验</router-link>
+    <section class="filter-card">
+      <div class="toolbar-row">
+        <label class="sr-only" for="wrong-book-filter">按测验筛选</label>
+        <select id="wrong-book-filter" v-model="selectedSubject">
+          <option value="">全部测验</option>
+          <option v-for="subject in subjects" :key="subject" :value="subject">
+            {{ subject }}
+          </option>
+        </select>
+        <router-link to="/student/courses" class="edu-btn edu-btn-secondary">继续学习</router-link>
       </div>
+    </section>
 
-      <div v-else class="wrong-questions">
-        <div class="filters">
-          <select v-model="selectedSubject" class="filter-select">
-            <option value="">全部科目</option>
-            <option v-for="subject in subjects" :key="subject" :value="subject">
-              {{ subject }}
-            </option>
-          </select>
+    <section v-if="loading" class="loading-panel">
+      <p class="loading-copy">错题记录加载中...</p>
+    </section>
+
+    <section v-else-if="filteredQuestions.length === 0" class="empty-panel">
+      <h3 class="empty-title">当前还没有错题记录</h3>
+      <p class="empty-copy">完成测验后，答错的题目会自动收录到这里，方便你后续集中复习。</p>
+    </section>
+
+    <section v-else class="card-grid cards-2">
+      <article v-for="item in filteredQuestions" :key="item.recordKey" class="info-card question-card">
+        <div class="entity-card-header">
+          <div>
+            <h3 class="entity-card-title">{{ item.quizTitle }}</h3>
+            <p class="entity-card-subtitle">{{ formatDate(item.recordedAt) }}</p>
+          </div>
+          <span class="chip danger">错题</span>
         </div>
 
-        <div class="questions-list">
-          <div 
-            v-for="(item, index) in filteredQuestions" 
-            :key="index" 
-            class="question-card"
-          >
-            <div class="question-header">
-              <span class="subject-tag">{{ item.quizTitle }}</span>
-              <span class="date">{{ formatDate(item.recordedAt) }}</span>
-            </div>
-            
-            <div class="question-content">
-              <div class="question-text">{{ item.question.content }}</div>
-              
-              <div v-if="item.question.type === 'SINGLE_CHOICE'" class="options">
-                <div 
-                  v-for="(option, i) in parseOptions(item.question.options)" 
-                  :key="i" 
-                  class="option"
-                >
-                  {{ String.fromCharCode(65 + i) }}. {{ option }}
-                </div>
-              </div>
-              
-              <div v-else class="true-false-options">
-                <div class="option">A. 正确</div>
-                <div class="option">B. 错误</div>
-              </div>
-            </div>
+        <div class="stack-sm">
+          <p class="question-text">{{ item.question.content }}</p>
 
-            <div class="correct-answer">
-              <strong>正确答案：</strong>
-              <span class="answer">{{ item.question.answer }}</span>
-            </div>
-
-            <div v-if="item.question.analysis" class="analysis">
-              <strong>解析：</strong>
-              <p>{{ item.question.analysis }}</p>
-            </div>
-
-            <div class="card-actions">
-              <button @click="markAsMastered(index)" class="btn-mastered">
-                ✅ 已掌握
-              </button>
-              <button @click="addToReview(index)" class="btn-review">
-                🔄 加入复习
-              </button>
+          <div v-if="parsedOptions(item.question).length > 0" class="option-list">
+            <div v-for="(option, index) in parsedOptions(item.question)" :key="`${item.recordKey}-${index}`" class="option-item">
+              <strong>{{ String.fromCharCode(65 + index) }}.</strong>
+              <span>{{ option }}</span>
             </div>
           </div>
+
+          <div class="answer-block">
+            <span class="answer-label">正确答案</span>
+            <strong>{{ item.question.answer || '未设置' }}</strong>
+          </div>
+
+          <div v-if="item.question.analysis" class="analysis-block">
+            <span class="answer-label">解析</span>
+            <p>{{ item.question.analysis }}</p>
+          </div>
         </div>
-      </div>
-    </main>
+
+        <div class="entity-card-actions">
+          <button type="button" class="edu-btn edu-btn-success" @click="markAsMastered(item.recordKey)">
+            标记已掌握
+          </button>
+          <button type="button" class="edu-btn edu-btn-secondary" @click="addToReview(item.quizTitle)">
+            加入复习
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <section v-if="feedback" class="message-banner" :class="feedbackType">
+      {{ feedback }}
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '../stores/user'
 import { quizApi } from '../api/quiz'
 
-const router = useRouter()
 const userStore = useUserStore()
 
 const wrongQuestions = ref([])
 const selectedSubject = ref('')
 const loading = ref(false)
+const feedback = ref('')
+const feedbackType = ref('success')
 
-const subjects = computed(() => {
-  const uniqueSubjects = [...new Set(wrongQuestions.value.map(item => item.quizTitle))]
-  return uniqueSubjects
-})
-
+const subjects = computed(() => [...new Set(wrongQuestions.value.map((item) => item.quizTitle))])
 const filteredQuestions = computed(() => {
-  if (!selectedSubject.value) {
-    return wrongQuestions.value
-  }
-  return wrongQuestions.value.filter(item => item.quizTitle === selectedSubject.value)
+  const list = selectedSubject.value
+    ? wrongQuestions.value.filter((item) => item.quizTitle === selectedSubject.value)
+    : wrongQuestions.value
+
+  return list.map((item, index) => ({
+    ...item,
+    recordKey: `${item.quizTitle}-${item.recordedAt}-${item.question?.id || index}`
+  }))
 })
+
+const setFeedback = (message, type = 'success') => {
+  feedback.value = message
+  feedbackType.value = type
+}
 
 const fetchWrongQuestions = async () => {
   loading.value = true
+  feedback.value = ''
   try {
     const response = await quizApi.getWrongQuestions(userStore.user.id)
     if (response.data.code === 200) {
       wrongQuestions.value = response.data.data
+    } else {
+      setFeedback(response.data.message || '获取错题失败', 'error')
     }
   } catch (error) {
-    console.error('获取错题失败:', error)
+    setFeedback('获取错题失败，请稍后再试', 'error')
   } finally {
     loading.value = false
   }
 }
 
-const parseOptions = (optionsStr) => {
+const parsedOptions = (question) => {
+  if (!question?.options) return []
   try {
-    return JSON.parse(optionsStr)
+    const parsed = JSON.parse(question.options)
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }
 }
 
 const formatDate = (dateStr) => {
-  return new Date(dateStr).toLocaleDateString('zh-CN')
+  if (!dateStr) return '未记录时间'
+  const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) return dateStr
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const markAsMastered = (index) => {
-  // 这里可以调用API标记为已掌握
-  wrongQuestions.value.splice(index, 1)
+const markAsMastered = (recordKey) => {
+  wrongQuestions.value = wrongQuestions.value.filter((item, index) => {
+    const key = `${item.quizTitle}-${item.recordedAt}-${item.question?.id || index}`
+    return key !== recordKey
+  })
+  setFeedback('已从当前错题列表中移除，后续可以再做持久化掌握状态。')
 }
 
-const addToReview = (index) => {
-  // 这里可以加入复习计划
-  alert('已加入复习计划')
-}
-
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
+const addToReview = (quizTitle) => {
+  setFeedback(`已加入复习计划建议：下一轮优先回顾“${quizTitle}”相关题目。`)
 }
 
 onMounted(() => {
@@ -162,259 +163,63 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.wrong-book-container {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #42b883;
-  color: white;
-}
-
-.nav-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-logout {
-  background-color: transparent;
-  border: 1px solid white;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-logout:hover {
-  background-color: white;
-  color: #42b883;
-}
-
-.book-content {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.header h2 {
-  color: #333;
-  margin-bottom: 0.5rem;
-}
-
-.header p {
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.loading, .empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.btn-go-quizzes {
-  display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  text-decoration: none;
-  margin-top: 1rem;
-  transition: transform 0.2s;
-}
-
-.btn-go-quizzes:hover {
-  transform: translateY(-2px);
-}
-
-.filters {
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.filter-select {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: white;
-  font-size: 1rem;
-}
-
-.questions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
 .question-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  display: grid;
+  gap: var(--spacing-md);
 }
 
-.question-card:hover {
-  transform: translateY(-2px);
-}
-
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.subject-tag {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-}
-
-.date {
-  color: #888;
-  font-size: 0.9rem;
-}
-
-.question-content {
-  margin-bottom: 1rem;
+.stack-sm {
+  display: grid;
+  gap: 14px;
 }
 
 .question-text {
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-  line-height: 1.6;
-  color: #333;
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.8;
+  font-weight: 600;
 }
 
-.options, .true-false-options {
+.option-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 10px;
 }
 
-.option {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.correct-answer {
-  background: #d4edda;
-  padding: 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.correct-answer .answer {
-  color: #155724;
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.analysis {
-  background: #fff3cd;
-  padding: 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.analysis p {
-  margin: 0.5rem 0 0 0;
-  color: #856404;
-  line-height: 1.5;
-}
-
-.card-actions {
+.option-item {
   display: flex;
-  gap: 0.75rem;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(23, 32, 51, 0.04);
+  color: var(--gray-700);
 }
 
-.btn-mastered, .btn-review {
-  flex: 1;
-  padding: 0.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s;
+.answer-block,
+.analysis-block {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.btn-mastered {
-  background: #28a745;
-  color: white;
+.analysis-block p {
+  margin: 0;
+  color: var(--gray-700);
+  line-height: 1.7;
 }
 
-.btn-mastered:hover {
-  background: #218838;
+.answer-label {
+  color: var(--gray-500);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.btn-review {
-  background: #ffc107;
-  color: #212529;
-}
-
-.btn-review:hover {
-  background: #e0a800;
-}
-
-@media (max-width: 768px) {
-  .options, .true-false-options {
-    grid-template-columns: 1fr;
-  }
-  
-  .question-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .card-actions {
-    flex-direction: column;
-  }
+.chip.danger {
+  background: rgba(198, 76, 76, 0.14);
+  color: #b73434;
 }
 </style>

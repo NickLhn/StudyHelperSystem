@@ -1,75 +1,85 @@
 <template>
-  <div class="dashboard-container">
-    <h1 class="page-title">📊 管理员仪表盘</h1>
-    
-    <!-- 统计卡片 -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon users">👥</div>
-        <div class="stat-content">
-          <h3>总用户数</h3>
-          <p class="stat-number">{{ stats.totalUsers || 0 }}</p>
-          <div class="stat-footer">
-            <span class="today-new">今日新增: {{ stats.todayNewUsers || 0 }}</span>
+  <div class="page-stack">
+    <section class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Platform Overview</span>
+        <h2 class="page-title">管理员首页改成更像一个平台运营看板</h2>
+        <p class="page-subtitle">用户增长、课程规模、资料数量和角色结构统一到同一套概览视图里，方便后续继续扩展运营模块。</p>
+      </div>
+      <div class="page-actions">
+        <span class="chip">平台实时概览</span>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-panel">
+        <div class="stat-kicker">总用户数</div>
+        <div class="stat-value">{{ stats.totalUsers || 0 }}</div>
+        <p class="stat-copy">今日新增 {{ stats.todayNewUsers || 0 }}</p>
+      </article>
+      <article class="stat-panel">
+        <div class="stat-kicker">总课程数</div>
+        <div class="stat-value">{{ stats.totalCourses || 0 }}</div>
+        <p class="stat-copy">今日新增 {{ stats.todayNewCourses || 0 }}</p>
+      </article>
+      <article class="stat-panel">
+        <div class="stat-kicker">总资料数</div>
+        <div class="stat-value">{{ stats.totalMaterials || 0 }}</div>
+        <p class="stat-copy">今日新增 {{ stats.todayNewMaterials || 0 }}</p>
+      </article>
+      <article class="stat-panel">
+        <div class="stat-kicker">角色结构</div>
+        <div class="stat-value">{{ stats.studentCount || 0 }}</div>
+        <p class="stat-copy">学生为主，教师 {{ stats.teacherCount || 0 }}，管理员 {{ stats.adminCount || 0 }}</p>
+      </article>
+    </section>
+
+    <section class="panel-grid two-up">
+      <article class="info-card">
+        <div class="stack-md">
+          <div>
+            <h3 class="section-title">角色分布</h3>
+            <p class="section-copy">用更易读的方式查看平台当前主要人群结构。</p>
+          </div>
+          <div class="data-points">
+            <div class="data-point"><span>学生</span><strong>{{ stats.studentCount || 0 }}</strong></div>
+            <div class="data-point"><span>教师</span><strong>{{ stats.teacherCount || 0 }}</strong></div>
+            <div class="data-point"><span>管理员</span><strong>{{ stats.adminCount || 0 }}</strong></div>
           </div>
         </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon courses">📚</div>
-        <div class="stat-content">
-          <h3>总课程数</h3>
-          <p class="stat-number">{{ stats.totalCourses || 0 }}</p>
-          <div class="stat-footer">
-            <span class="today-new">今日新增: {{ stats.todayNewCourses || 0 }}</span>
+      </article>
+
+      <article class="info-card">
+        <div class="stack-md">
+          <div>
+            <h3 class="section-title">管理入口</h3>
+            <p class="section-copy">保留最常见的后台治理动作，进入路径更短。</p>
+          </div>
+          <div class="action-grid">
+            <router-link to="/admin/users" class="quick-link">
+              <strong>用户管理</strong>
+              <span>搜索、筛选与角色调整</span>
+            </router-link>
+            <router-link to="/admin/content" class="quick-link">
+              <strong>内容概览</strong>
+              <span>课程和资料的整体质量</span>
+            </router-link>
+            <router-link to="/admin/invitations" class="quick-link">
+              <strong>邀请码管理</strong>
+              <span>控制注册入口状态</span>
+            </router-link>
           </div>
         </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon materials">📁</div>
-        <div class="stat-content">
-          <h3>总资料数</h3>
-          <p class="stat-number">{{ stats.totalMaterials || 0 }}</p>
-          <div class="stat-footer">
-            <span class="today-new">今日新增: {{ stats.todayNewMaterials || 0 }}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon roles">🎭</div>
-        <div class="stat-content">
-          <h3>角色分布</h3>
-          <div class="role-stats">
-            <div class="role-item">
-              <span class="role-label">学生:</span>
-              <span class="role-count">{{ stats.studentCount || 0 }}</span>
-            </div>
-            <div class="role-item">
-              <span class="role-label">教师:</span>
-              <span class="role-count">{{ stats.teacherCount || 0 }}</span>
-            </div>
-            <div class="role-item">
-              <span class="role-label">管理员:</span>
-              <span class="role-count">{{ stats.adminCount || 0 }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading">
-      <div class="spinner"></div>
-      <p>加载统计数据中...</p>
-    </div>
-    
-    <!-- 错误提示 -->
-    <div v-if="error" class="error-message">
-      <i class="icon">⚠️</i>
+      </article>
+    </section>
+
+    <section v-if="loading" class="loading-panel">
+      <p class="loading-copy">加载统计数据中...</p>
+    </section>
+
+    <section v-if="error" class="message-banner error">
       {{ error }}
-    </div>
+    </section>
   </div>
 </template>
 
@@ -84,7 +94,7 @@ const error = ref('')
 const loadStats = async () => {
   loading.value = true
   error.value = ''
-  
+
   try {
     const response = await adminApi.getStats()
     if (response.data.code === 200) {
@@ -94,246 +104,32 @@ const loadStats = async () => {
     }
   } catch (err) {
     error.value = '获取统计数据失败，请检查网络连接'
-    console.error('获取统计数据失败:', err)
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  loadStats()
-})
+onMounted(loadStats)
 </script>
 
 <style scoped>
-.dashboard-container {
-  padding: 2rem 0;
-}
-
-.page-title {
-  color: #333;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-  text-align: center;
-}
-
-.stats-grid {
+.quick-link {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
 }
 
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  display: flex;
-  align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  margin-right: 1rem;
-  flex-shrink: 0;
-}
-
-.stat-icon.users {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.stat-icon.courses {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-}
-
-.stat-icon.materials {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
-}
-
-.stat-icon.roles {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  color: white;
-}
-
-.stat-content h3 {
-  margin: 0 0 0.5rem 0;
-  color: #555;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 0.5rem 0;
-}
-
-.stat-footer {
-  font-size: 0.85rem;
-  color: #888;
-}
-
-.today-new {
-  background: #e8f5e8;
-  color: #2e7d32;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.role-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.role-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.25rem 0;
-}
-
-.role-label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.role-count {
-  font-weight: 600;
-  color: #333;
-  background: #f0f0f0;
-  padding: 0.1rem 0.5rem;
-  border-radius: 8px;
-}
-
-.quick-actions {
-  margin-top: 3rem;
-}
-
-.quick-actions h2 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.action-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem 1.5rem;
-  text-align: center;
+.quick-link:hover {
+  background: rgba(44, 96, 214, 0.07);
   text-decoration: none;
-  color: inherit;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
 }
 
-.action-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  border-color: #667eea;
-}
-
-.action-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.action-card h3 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.action-card p {
-  margin: 0;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.loading {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.error-message {
-  background: #ffebee;
-  color: #c62828;
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-  margin: 2rem 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 1rem 0;
-  }
-  
-  .page-title {
-    font-size: 1.5rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .stat-card {
-    padding: 1rem;
-  }
-  
-  .actions-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .action-card {
-    padding: 1.5rem 1rem;
-  }
+.quick-link span {
+  color: var(--gray-500);
+  font-size: 13px;
 }
 </style>

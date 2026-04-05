@@ -1,80 +1,94 @@
 <template>
-  <div class="statistics-container">
-    <main class="statistics-content">
-      <div class="header">
-        <h2>学习统计分析</h2>
-        <div class="controls">
-          <select v-model="selectedPeriod" @change="loadStatistics" class="period-select">
-            <option value="week">最近一周</option>
-            <option value="month">最近一月</option>
-            <option value="year">最近一年</option>
-          </select>
-        </div>
+  <div class="page-stack">
+    <section class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Learning Analytics</span>
+        <h2 class="page-title">把学习统计整理成更容易阅读的分析视图</h2>
+        <p class="page-subtitle">关键指标先看摘要，图表再看分布和趋势，避免一进页面就被图形堆满。</p>
       </div>
+      <div class="page-actions">
+        <select v-model="selectedPeriod" @change="loadStatistics" class="period-select">
+          <option value="week">最近一周</option>
+          <option value="month">最近一月</option>
+          <option value="year">最近一年</option>
+        </select>
+      </div>
+    </section>
 
-      <div v-if="loading" class="loading">加载统计中...</div>
-      
-      <div v-else class="stats-dashboard">
-        <!-- 关键指标卡片 -->
-        <div class="metrics-grid">
-          <div class="metric-card">
-            <div class="metric-value">{{ stats.totalHours || 0 }} 小时</div>
-            <div class="metric-label">总学习时长</div>
-            <div class="metric-change positive" v-if="comparison.current && comparison.previous">
-              {{ calculateChange('totalHours') }}
-            </div>
-          </div>
-          
-          <div class="metric-card">
-            <div class="metric-value">{{ stats.studyDays || 0 }} 天</div>
-            <div class="metric-label">学习天数</div>
-            <div class="metric-change" v-if="comparison.current && comparison.previous">
-              {{ calculateChange('studyDays') }}
-            </div>
-          </div>
-          
-          <div class="metric-card">
-            <div class="metric-value">{{ stats.courseDistribution?.length || 0 }} 门</div>
-            <div class="metric-label">涉及课程数</div>
-          </div>
-        </div>
+    <section v-if="loading" class="loading-panel">
+      <p class="loading-copy">统计数据加载中...</p>
+    </section>
 
-        <!-- 图表区域 -->
-        <div class="charts-grid">
-          <!-- 课程时长分布饼图 -->
-          <div class="chart-card">
-            <h3>课程学习时长分布</h3>
+    <template v-else>
+      <section class="stats-grid">
+        <article class="stat-panel">
+          <div class="stat-kicker">总学习时长</div>
+          <div class="stat-value">{{ stats.totalHours || 0 }}h</div>
+          <p class="stat-copy">{{ comparison.current && comparison.previous ? calculateChange('totalHours') : '暂无对比数据' }}</p>
+        </article>
+        <article class="stat-panel">
+          <div class="stat-kicker">学习天数</div>
+          <div class="stat-value">{{ stats.studyDays || 0 }}</div>
+          <p class="stat-copy">{{ comparison.current && comparison.previous ? calculateChange('studyDays') : '暂无对比数据' }}</p>
+        </article>
+        <article class="stat-panel">
+          <div class="stat-kicker">涉及课程</div>
+          <div class="stat-value">{{ stats.courseDistribution?.length || 0 }}</div>
+          <p class="stat-copy">当前周期中有学习记录的课程数量</p>
+        </article>
+      </section>
+
+      <section class="panel-grid two-up">
+        <article class="info-card chart-card">
+          <div class="stack-md">
+            <div>
+              <h3 class="section-title">课程学习时长分布</h3>
+              <p class="section-copy">看看你的时间主要花在哪些课程上。</p>
+            </div>
             <div ref="pieChartRef" class="chart-container"></div>
           </div>
+        </article>
 
-          <!-- 每日学习趋势折线图 -->
-          <div class="chart-card">
-            <h3>每日学习时长趋势</h3>
+        <article class="info-card chart-card">
+          <div class="stack-md">
+            <div>
+              <h3 class="section-title">每日学习时长趋势</h3>
+              <p class="section-copy">趋势图帮助你观察学习是否稳定持续。</p>
+            </div>
             <div ref="lineChartRef" class="chart-container"></div>
           </div>
-        </div>
+        </article>
+      </section>
 
-        <!-- 对比分析 -->
-        <div class="comparison-section" v-if="comparison.current && comparison.previous">
-          <h3>对比分析</h3>
-          <div class="comparison-grid">
-            <div class="comparison-card">
-              <h4>本期 ({{ formatDateRange(selectedPeriod, 'current') }})</h4>
-              <p>学习时长: {{ comparison.current.totalHours }} 小时</p>
-            </div>
-            <div class="comparison-card">
-              <h4>上期 ({{ formatDateRange(selectedPeriod, 'previous') }})</h4>
-              <p>学习时长: {{ comparison.previous.totalHours }} 小时</p>
+      <section v-if="comparison.current && comparison.previous" class="panel-grid two-up">
+        <article class="info-card">
+          <h3 class="section-title">本期</h3>
+          <p class="section-copy">{{ formatDateRange(selectedPeriod, 'current') }}</p>
+          <div class="data-points">
+            <div class="data-point">
+              <span>学习时长</span>
+              <strong>{{ comparison.current.totalHours }} 小时</strong>
             </div>
           </div>
-        </div>
-      </div>
-    </main>
+        </article>
+
+        <article class="info-card">
+          <h3 class="section-title">上期</h3>
+          <p class="section-copy">{{ formatDateRange(selectedPeriod, 'previous') }}</p>
+          <div class="data-points">
+            <div class="data-point">
+              <span>学习时长</span>
+              <strong>{{ comparison.previous.totalHours }} 小时</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { statisticApi } from '../api/statistic'
 import * as echarts from 'echarts'
@@ -115,73 +129,49 @@ const loadStatistics = async () => {
   }
 }
 
-
 const renderPieChart = () => {
   if (!pieChartRef.value) return
-
-  if (!pieChart) {
-    pieChart = echarts.init(pieChartRef.value)
-  }
+  if (!pieChart) pieChart = echarts.init(pieChartRef.value)
 
   const courseData = stats.value.courseDistribution || []
-  
-  const option = {
+  pieChart.setOption({
+    backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c}小时 ({d}%)'
+      formatter: '{b}: {c} 小时 ({d}%)'
     },
     legend: {
-      bottom: '5%',
-      left: 'center'
+      bottom: 0,
+      textStyle: { color: '#42506b' }
     },
     series: [
       {
-        name: '学习时长',
         type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
+        radius: ['42%', '70%'],
         itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
+          borderRadius: 12,
+          borderColor: '#ffffff',
+          borderWidth: 3
         },
-        label: {
-          show: false,
-          position: 'center'
-        },
-        emphasis: {
-          label: {
-            show: true,
-            fontSize: 20,
-            fontWeight: 'bold'
-          }
-        },
-        labelLine: {
-          show: false
-        },
-        data: courseData.map(item => ({
+        data: courseData.map((item) => ({
           value: item.hours,
           name: item.courseName
         }))
       }
     ]
-  }
-
-  pieChart.setOption(option)
+  })
 }
 
 const renderLineChart = () => {
   if (!lineChartRef.value) return
-
-  if (!lineChart) {
-    lineChart = echarts.init(lineChartRef.value)
-  }
+  if (!lineChart) lineChart = echarts.init(lineChartRef.value)
 
   const dailyData = stats.value.dailyTrend || []
-  const dates = dailyData.map(item => item.date.slice(5)) // 只显示月-日
-  const hours = dailyData.map(item => item.hours)
+  const dates = dailyData.map((item) => item.date.slice(5))
+  const hours = dailyData.map((item) => item.hours)
 
-  const option = {
+  lineChart.setOption({
+    backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
       formatter: (params) => {
@@ -191,11 +181,16 @@ const renderLineChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: dates
+      data: dates,
+      axisLine: { lineStyle: { color: 'rgba(23, 32, 51, 0.12)' } },
+      axisLabel: { color: '#6d7890' }
     },
     yAxis: {
       type: 'value',
-      name: '小时'
+      name: '小时',
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: 'rgba(23, 32, 51, 0.08)' } },
+      axisLabel: { color: '#6d7890' }
     },
     series: [
       {
@@ -204,32 +199,28 @@ const renderLineChart = () => {
         smooth: true,
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(66, 184, 131, 0.3)' },
-            { offset: 1, color: 'rgba(66, 184, 131, 0.05)' }
+            { offset: 0, color: 'rgba(44, 96, 214, 0.24)' },
+            { offset: 1, color: 'rgba(44, 96, 214, 0.02)' }
           ])
         },
         lineStyle: {
-          color: '#42b883',
+          color: '#2c60d6',
           width: 3
         },
         itemStyle: {
-          color: '#42b883',
-          borderWidth: 2,
-          borderColor: '#fff'
+          color: '#2c60d6'
         }
       }
     ]
-  }
-
-  lineChart.setOption(option)
+  })
 }
 
 const calculateChange = (field) => {
   const current = comparison.value.current[field] || 0
   const previous = comparison.value.previous[field] || 0
-  
+
   if (previous === 0) return current > 0 ? '+∞%' : '0%'
-  
+
   const change = ((current - previous) / previous) * 100
   const sign = change >= 0 ? '+' : ''
   return `${sign}${change.toFixed(1)}%`
@@ -237,7 +228,8 @@ const calculateChange = (field) => {
 
 const formatDateRange = (period, type) => {
   const now = new Date()
-  let start, end
+  let start
+  let end
 
   if (period === 'week') {
     end = now
@@ -251,214 +243,41 @@ const formatDateRange = (period, type) => {
   }
 
   if (type === 'previous') {
-    end = new Date(start.getTime() - 1 * 24 * 60 * 60 * 1000)
+    end = new Date(start.getTime() - 24 * 60 * 60 * 1000)
     start = new Date(end.getTime() - (period === 'week' ? 6 : period === 'month' ? 29 : 364) * 24 * 60 * 60 * 1000)
   }
 
-  return `${start.getMonth()+1}/${start.getDate()} - ${end.getMonth()+1}/${end.getDate()}`
+  return `${start.getMonth() + 1}/${start.getDate()} - ${end.getMonth() + 1}/${end.getDate()}`
 }
 
-// 响应式调整图表大小
-window.addEventListener('resize', () => {
+const handleResize = () => {
   if (pieChart) pieChart.resize()
   if (lineChart) lineChart.resize()
-})
+}
 
 onMounted(() => {
   loadStatistics()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (pieChart) pieChart.dispose()
+  if (lineChart) lineChart.dispose()
 })
 </script>
 
 <style scoped>
-.statistics-container {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.statistics-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header h2 {
-  color: #333;
-  margin: 0;
-}
-
-.controls {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
 .period-select {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: white;
-  font-size: 1rem;
-}
-
-.btn-sync {
-  background: #667eea;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-sync:hover:not(:disabled) {
-  background: #5a6fd8;
-}
-
-.btn-sync:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.loading {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.metric-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  transition: transform 0.2s;
-}
-
-.metric-card:hover {
-  transform: translateY(-4px);
-}
-
-.metric-value {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #42b883;
-  margin-bottom: 0.5rem;
-}
-
-.metric-label {
-  color: #666;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.metric-change {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.metric-change.positive {
-  color: #27ae60;
-}
-
-.metric-change:not(.positive) {
-  color: #e74c3c;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  min-width: 180px;
 }
 
 .chart-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.chart-card h3 {
-  margin-top: 0;
-  color: #333;
-  margin-bottom: 1rem;
-  text-align: center;
+  min-height: 420px;
 }
 
 .chart-container {
   width: 100%;
-  height: 300px;
-}
-
-.comparison-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.comparison-section h3 {
-  margin-top: 0;
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.comparison-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.comparison-card {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.comparison-card h4 {
-  margin-top: 0;
-  color: #42b883;
-  margin-bottom: 0.75rem;
-}
-
-.comparison-card p {
-  margin: 0.5rem 0;
-  color: #555;
-}
-
-@media (max-width: 768px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .comparison-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .controls {
-    width: 100%;
-    justify-content: space-between;
-  }
+  height: 320px;
 }
 </style>

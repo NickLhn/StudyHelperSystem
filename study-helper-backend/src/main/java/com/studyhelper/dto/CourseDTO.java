@@ -10,10 +10,14 @@ public class CourseDTO {
     private String name;
     private Course.Category category;
     private String categoryLabel;
+    private Course.Status status;
+    private String statusLabel;
     private String teacher;
+    private String semesterLabel;
     private String schedule;
     private String location;
     private String remark;
+    private LocalDateTime archivedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String invitationCode;
@@ -28,10 +32,14 @@ public class CourseDTO {
         dto.setName(course.getName());
         dto.setCategory(course.getCategory());
         dto.setCategoryLabel(course.getCategory().getLabel());
+        dto.setStatus(course.getStatus());
+        dto.setStatusLabel(course.getStatus().getLabel());
         dto.setTeacher(course.getTeacher());
+        dto.setSemesterLabel(course.getSemesterLabel());
         dto.setSchedule(course.getSchedule());
         dto.setLocation(course.getLocation());
         dto.setRemark(course.getRemark());
+        dto.setArchivedAt(course.getArchivedAt());
         dto.setCreatedAt(course.getCreatedAt());
         dto.setUpdatedAt(course.getUpdatedAt());
         dto.setInvitationCode(course.getInvitationCode());
@@ -70,12 +78,36 @@ public class CourseDTO {
         this.categoryLabel = categoryLabel;
     }
 
+    public Course.Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Course.Status status) {
+        this.status = status;
+    }
+
+    public String getStatusLabel() {
+        return statusLabel;
+    }
+
+    public void setStatusLabel(String statusLabel) {
+        this.statusLabel = statusLabel;
+    }
+
     public String getTeacher() {
         return teacher;
     }
 
     public void setTeacher(String teacher) {
         this.teacher = teacher;
+    }
+
+    public String getSemesterLabel() {
+        return semesterLabel;
+    }
+
+    public void setSemesterLabel(String semesterLabel) {
+        this.semesterLabel = semesterLabel;
     }
 
     public String getSchedule() {
@@ -100,6 +132,14 @@ public class CourseDTO {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
     }
 
     public LocalDateTime getCreatedAt() {

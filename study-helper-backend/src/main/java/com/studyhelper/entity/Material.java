@@ -31,6 +31,18 @@ public class Material {
 
     private String description;
 
+    @Column(length = 64)
+    private String category;
+
+    @Column(columnDefinition = "TEXT")
+    private String tags;
+
+    @Column(name = "version_label", length = 64)
+    private String versionLabel;
+
+    @Column(name = "version_note", columnDefinition = "TEXT")
+    private String versionNote;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -123,6 +135,38 @@ public class Material {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public String getVersionLabel() {
+        return versionLabel;
+    }
+
+    public void setVersionLabel(String versionLabel) {
+        this.versionLabel = versionLabel;
+    }
+
+    public String getVersionNote() {
+        return versionNote;
+    }
+
+    public void setVersionNote(String versionNote) {
+        this.versionNote = versionNote;
     }
 
     public User getUser() {

@@ -1,116 +1,159 @@
 <template>
-  <div class="detail-container">
-    <nav class="navbar">
-      <div class="nav-brand">学习辅助系统</div>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link">首页</router-link>
-        <router-link to="/courses" class="nav-link">课程管理</router-link>
-        <router-link to="/tasks" class="nav-link">学习计划</router-link>
-        <router-link to="/materials" class="nav-link">资料中心</router-link>
-        <router-link to="/profile" class="nav-link">个人中心</router-link>
-        <button @click="handleLogout" class="btn-logout">退出</button>
+  <div class="page-stack">
+    <section class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Material Detail</span>
+        <h2 class="page-title">把资料详情整理成一页清楚的学习卡片</h2>
+        <p class="page-subtitle">文件信息、版本说明、标签和互动记录集中在同一页，减少来回跳转的成本。</p>
       </div>
-    </nav>
+      <div class="page-actions">
+        <button type="button" class="edu-btn edu-btn-secondary" @click="goBack">返回资料中心</button>
+      </div>
+    </section>
 
-    <main class="detail-content">
-      <div v-if="loading" class="loading">加载中...</div>
-      
-      <div v-else-if="material" class="material-detail">
-        <div class="detail-header">
-          <div class="file-icon-large">
-            <span class="icon">{{ getFileIcon(material.fileType) }}</span>
-          </div>
-          <div class="header-info">
-            <h1>{{ material.name }}</h1>
-            <p class="file-name">{{ material.fileName }}</p>
-            <div class="meta-info">
-              <span>📁 {{ material.fileSizeFormatted }}</span>
-              <span v-if="material.courseName">📚 {{ material.courseName }}</span>
-              <span>👤 {{ material.username }}</span>
-              <span>🕒 {{ formatDate(material.createdAt) }}</span>
+    <section v-if="loading" class="loading-panel">
+      <p class="loading-copy">资料详情加载中...</p>
+    </section>
+
+    <template v-else-if="material">
+      <section class="panel-grid two-up">
+        <article class="info-card">
+          <div class="stack-lg">
+            <div class="detail-heading">
+              <div class="file-mark">{{ getFileLabel(material.fileType) }}</div>
+              <div>
+                <h3 class="section-title">{{ material.name }}</h3>
+                <p class="section-copy">{{ material.fileName }}</p>
+              </div>
+            </div>
+
+            <div class="material-meta">
+              <span class="chip">{{ getCategoryLabel(material.category) }}</span>
+              <span v-if="material.versionLabel" class="chip primary">{{ material.versionLabel }}</span>
+              <span v-if="material.courseName" class="chip soft">{{ material.courseName }}</span>
+            </div>
+
+            <div class="data-points">
+              <div class="data-point">
+                <span>上传者</span>
+                <strong>{{ material.username }}</strong>
+              </div>
+              <div class="data-point">
+                <span>文件大小</span>
+                <strong>{{ material.fileSizeFormatted }}</strong>
+              </div>
+              <div class="data-point">
+                <span>下载次数</span>
+                <strong>{{ material.downloadCount }}</strong>
+              </div>
+              <div class="data-point">
+                <span>上传时间</span>
+                <strong>{{ formatDate(material.createdAt) }}</strong>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <a :href="downloadUrl" class="edu-btn edu-btn-primary" @click="handleDownload">下载资料</a>
+              <button
+                type="button"
+                class="edu-btn edu-btn-secondary"
+                :class="{ active: material.likedByCurrentUser }"
+                @click="toggleLike"
+              >
+                点赞 {{ material.likeCount }}
+              </button>
+              <button
+                type="button"
+                class="edu-btn edu-btn-secondary"
+                :class="{ active: material.favoritedByCurrentUser }"
+                @click="toggleFavorite"
+              >
+                收藏 {{ material.favoriteCount }}
+              </button>
+              <button
+                v-if="material.userId === userStore.user?.id"
+                type="button"
+                class="edu-btn edu-btn-danger"
+                @click="deleteMaterial"
+              >
+                删除资料
+              </button>
             </div>
           </div>
-          <div class="actions">
-            <a :href="downloadUrl" class="btn-download" @click="handleDownload">
-              📥 下载 ({{ material.downloadCount }})
-            </a>
-            <button 
-              class="btn-like" 
-              :class="{ active: material.likedByCurrentUser }"
-              @click="toggleLike"
-            >
-              👍 {{ material.likeCount }}
-            </button>
-            <button 
-              class="btn-favorite" 
-              :class="{ active: material.favoritedByCurrentUser }"
-              @click="toggleFavorite"
-            >
-              ⭐ {{ material.favoriteCount }}
-            </button>
-            <button 
-              v-if="material.userId === userStore.user?.id"
-              class="btn-delete"
-              @click="deleteMaterial"
-            >
-              🗑️ 删除
-            </button>
+        </article>
+
+        <article class="info-card">
+          <div class="stack-lg">
+            <div>
+              <h3 class="section-title">资料说明</h3>
+              <p class="section-copy">{{ material.description || '这份资料暂时没有补充说明。' }}</p>
+            </div>
+
+            <div v-if="material.versionNote" class="version-panel">
+              <h4>版本说明</h4>
+              <p>{{ material.versionNote }}</p>
+            </div>
+
+            <div v-if="material.tags?.length" class="tag-row">
+              <span v-for="tag in material.tags" :key="tag" class="tag-chip">#{{ tag }}</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="info-card">
+        <div class="table-header-row">
+          <div>
+            <h3 class="section-title">评论区</h3>
+            <p class="section-copy">把使用反馈、补充问题和学习交流留在资料旁边，后续复习时更容易回看。</p>
           </div>
         </div>
 
-        <div v-if="material.description" class="description-section">
-          <h3>资料描述</h3>
-          <p>{{ material.description }}</p>
-        </div>
-
-        <div class="comments-section">
-          <h3>评论 ({{ comments.length }})</h3>
-          
-          <div class="comment-form">
-            <textarea 
-              v-model="newComment"
-              placeholder="写下你的评论..."
-              rows="3"
-            ></textarea>
-            <button 
-              @click="submitComment" 
+        <div class="comment-form">
+          <label class="sr-only" for="material-comment">评论内容</label>
+          <textarea
+            id="material-comment"
+            v-model="newComment"
+            class="edu-input"
+            placeholder="写下你的评论..."
+            rows="4"
+          ></textarea>
+          <div class="action-row">
+            <button
+              type="button"
+              class="edu-btn edu-btn-primary"
               :disabled="!newComment.trim() || commentLoading"
-              class="btn-comment"
+              @click="submitComment"
             >
               {{ commentLoading ? '发布中...' : '发布评论' }}
             </button>
           </div>
-
-          <div v-if="comments.length === 0" class="no-comments">
-            暂无评论，快来抢沙发吧！
-          </div>
-
-          <div v-else class="comments-list">
-            <div 
-              v-for="comment in comments" 
-              :key="comment.id" 
-              class="comment-item"
-            >
-              <div class="comment-avatar">
-                <span>{{ getAvatarText(comment.username) }}</span>
-              </div>
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-author">{{ comment.username }}</span>
-                  <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
-                </div>
-                <p class="comment-text">{{ comment.content }}</p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-    </main>
+
+        <div v-if="comments.length === 0" class="empty-panel compact-empty">
+          <h3 class="empty-title">还没有评论</h3>
+          <p class="empty-copy">第一条反馈会帮助后面的同学更快理解这份资料。</p>
+        </div>
+
+        <div v-else class="comment-list">
+          <article v-for="comment in comments" :key="comment.id" class="comment-item">
+            <div class="comment-avatar">{{ getAvatarText(comment.username) }}</div>
+            <div class="comment-body">
+              <div class="comment-head">
+                <strong>{{ comment.username }}</strong>
+                <span>{{ formatTime(comment.createdAt) }}</span>
+              </div>
+              <p>{{ comment.content }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { materialApi } from '../api/material'
@@ -126,9 +169,18 @@ const commentLoading = ref(false)
 const newComment = ref('')
 
 const materialId = computed(() => route.params.id)
-const downloadUrl = computed(() => 
+const downloadUrl = computed(() =>
   material.value ? materialApi.downloadMaterial(material.value.id, userStore.user.id) : '#'
 )
+
+const materialCategories = [
+  { value: 'LECTURE_NOTE', label: '讲义课件' },
+  { value: 'ASSIGNMENT', label: '作业资料' },
+  { value: 'REFERENCE', label: '参考资料' },
+  { value: 'EXAM', label: '考试复习' },
+  { value: 'LAB', label: '实验资料' },
+  { value: 'OTHER', label: '其他' }
+]
 
 const fetchMaterial = async () => {
   loading.value = true
@@ -136,11 +188,11 @@ const fetchMaterial = async () => {
     const response = await materialApi.getMaterialById(materialId.value, userStore.user.id)
     if (response.data.code === 200) {
       material.value = response.data.data
-      fetchComments()
+      await fetchComments()
     }
   } catch (error) {
     console.error('获取资料详情失败:', error)
-    router.push('/materials')
+    goBack()
   } finally {
     loading.value = false
   }
@@ -157,9 +209,7 @@ const fetchComments = async () => {
   }
 }
 
-const handleDownload = () => {
-  // 下载统计已在后端处理
-}
+const handleDownload = () => {}
 
 const toggleLike = async () => {
   try {
@@ -188,14 +238,13 @@ const submitComment = async () => {
 
   commentLoading.value = true
   try {
-    const response = await materialApi.addComment(
-      materialId.value, 
-      userStore.user.id, 
-      newComment.value
-    )
+    const response = await materialApi.addComment(materialId.value, userStore.user.id, newComment.value)
     if (response.data.code === 200) {
       comments.value.unshift(response.data.data)
       newComment.value = ''
+      if (material.value) {
+        material.value.commentCount = Number(material.value.commentCount || 0) + 1
+      }
     }
   } catch (error) {
     console.error('发表评论失败:', error)
@@ -210,339 +259,159 @@ const deleteMaterial = async () => {
   try {
     const response = await materialApi.deleteMaterial(material.value.id, userStore.user.id)
     if (response.data.code === 200) {
-      router.push('/materials')
+      goBack()
     }
   } catch (error) {
     alert('删除失败')
   }
 }
 
-const getFileIcon = (fileType) => {
-  const icons = {
-    '.pdf': '📄',
-    '.docx': '📝',
-    '.pptx': '📊',
-    '.jpg': '🖼️',
-    '.jpeg': '🖼️',
-    '.png': '🖼️'
-  }
-  return icons[fileType] || '📁'
+const getFileLabel = (fileType) => String(fileType || 'FILE').replace('.', '').toUpperCase()
+
+const getCategoryLabel = (category) => {
+  const matched = materialCategories.find((item) => item.value === category)
+  return matched ? matched.label : '未分类'
 }
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('zh-CN')
+const getAvatarText = (username) => (username ? username.charAt(0).toUpperCase() : 'U')
+
+const formatDate = (dateStr) => (dateStr ? new Date(dateStr).toLocaleString('zh-CN') : '')
+const formatTime = (dateStr) => (dateStr ? new Date(dateStr).toLocaleString('zh-CN') : '')
+
+const goBack = () => {
+  const target = userStore.isTeacher ? '/teacher/materials' : '/materials'
+  router.push(target)
 }
 
-const formatTime = (dateStr) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
-
-const getAvatarText = (username) => {
-  return username ? username.charAt(0).toUpperCase() : 'U'
-}
-
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
-}
-
-onMounted(() => {
-  fetchMaterial()
-})
+onMounted(fetchMaterial)
 </script>
 
 <style scoped>
-.detail-container {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #42b883;
-  color: white;
-}
-
-.nav-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1rem;
+.detail-heading {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
   align-items: center;
 }
 
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
+.file-mark {
+  min-width: 72px;
+  min-height: 72px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(44, 96, 214, 0.14), rgba(102, 163, 255, 0.18));
+  color: #2c60d6;
+  font-weight: 800;
 }
 
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-logout {
-  background-color: transparent;
-  border: 1px solid white;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-logout:hover {
-  background-color: white;
-  color: #42b883;
-}
-
-.detail-content {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.loading {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-}
-
-.material-detail {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.detail-header {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.file-icon-large .icon {
-  font-size: 4rem;
-}
-
-.header-info {
-  flex: 1;
-}
-
-.header-info h1 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-}
-
-.file-name {
-  color: #666;
-  margin: 0.5rem 0;
-}
-
-.meta-info {
+.material-meta,
+.tag-row,
+.action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: #888;
+  gap: 10px;
 }
 
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.version-panel {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(246, 248, 252, 0.92);
+  border: 1px solid rgba(23, 32, 51, 0.06);
 }
 
-.btn-download,
-.btn-like,
-.btn-favorite,
-.btn-delete {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  text-decoration: none;
-  text-align: center;
-  font-size: 0.9rem;
-  transition: all 0.3s;
-}
-
-.btn-download {
-  background: #42b883;
-  color: white;
-}
-
-.btn-download:hover {
-  background: #369870;
-}
-
-.btn-like,
-.btn-favorite {
-  background: #f0f0f0;
-  color: #666;
-}
-
-.btn-like.active {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.btn-favorite.active {
-  background: #fff8e1;
-  color: #f57c00;
-}
-
-.btn-delete {
-  background: #ff6b6b;
-  color: white;
-}
-
-.btn-delete:hover {
-  background: #ee5a5a;
-}
-
-.description-section {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.description-section h3 {
-  color: #333;
-  margin-bottom: 0.75rem;
-}
-
-.description-section p {
-  color: #666;
-  line-height: 1.6;
-}
-
-.comments-section h3 {
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.comment-form {
-  margin-bottom: 1.5rem;
-}
-
-.comment-form textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-  resize: vertical;
-}
-
-.comment-form textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.btn-comment {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 0.5rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s;
-}
-
-.btn-comment:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-comment:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.no-comments {
-  text-align: center;
-  color: #888;
-  padding: 2rem;
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.comment-item {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.comment-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.comment-content {
-  flex: 1;
-}
-
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.comment-author {
-  font-weight: 500;
-  color: #333;
-}
-
-.comment-time {
-  font-size: 0.8rem;
-  color: #888;
-}
-
-.comment-text {
-  color: #555;
-  line-height: 1.5;
+.version-panel h4,
+.version-panel p {
   margin: 0;
 }
 
-@media (max-width: 768px) {
-  .detail-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
+.version-panel p {
+  margin-top: 6px;
+  color: var(--gray-700);
+  line-height: 1.7;
+}
+
+.table-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.comment-form {
+  display: grid;
+  gap: 14px;
+}
+
+.compact-empty {
+  margin-top: 18px;
+}
+
+.comment-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.comment-item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(246, 248, 252, 0.92);
+  border: 1px solid rgba(23, 32, 51, 0.06);
+}
+
+.comment-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(44, 96, 214, 0.12);
+  color: #2c60d6;
+  font-weight: 800;
+}
+
+.comment-body {
+  display: grid;
+  gap: 6px;
+}
+
+.comment-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--gray-500);
+  font-size: 12px;
+}
+
+.comment-body p {
+  margin: 0;
+  color: var(--gray-800);
+  line-height: 1.7;
+}
+
+.tag-chip {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(15, 139, 132, 0.10);
+  color: #0f6962;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chip.primary {
+  background: rgba(44, 96, 214, 0.12);
+  color: #2c60d6;
+}
+
+.chip.soft {
+  background: rgba(15, 139, 132, 0.10);
+  color: #0f6962;
 }
 </style>

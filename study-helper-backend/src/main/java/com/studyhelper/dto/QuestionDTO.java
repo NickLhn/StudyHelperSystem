@@ -16,13 +16,17 @@ public class QuestionDTO {
     private String analysis;
 
     public static QuestionDTO fromQuestion(Question question) {
+        return fromQuestion(question, true);
+    }
+
+    public static QuestionDTO fromQuestion(Question question, boolean includeAnswer) {
         QuestionDTO dto = new QuestionDTO();
         dto.setId(question.getId());
         dto.setContent(question.getContent());
         dto.setType(question.getType());
         dto.setTypeLabel(question.getType().getLabel());
         dto.setOptions(question.getOptions());
-        dto.setAnswer(question.getAnswer());
+        dto.setAnswer(includeAnswer ? question.getAnswer() : null);
         dto.setScore(question.getScore());
         dto.setAnalysis(question.getAnalysis());
         return dto;

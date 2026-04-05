@@ -12,6 +12,8 @@ public class CourseRequest {
 
     private String teacher;
 
+    private String semesterLabel;
+
     private String schedule;
 
     private String location;
@@ -40,6 +42,14 @@ public class CourseRequest {
 
     public void setTeacher(String teacher) {
         this.teacher = teacher;
+    }
+
+    public String getSemesterLabel() {
+        return semesterLabel;
+    }
+
+    public void setSemesterLabel(String semesterLabel) {
+        this.semesterLabel = semesterLabel;
     }
 
     public String getSchedule() {

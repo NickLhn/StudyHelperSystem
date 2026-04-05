@@ -5,7 +5,7 @@
         <h1 class="page-title page-title-left">在线测验</h1>
         <div class="header-actions">
           <router-link to="/quiz/create" class="edu-btn edu-btn-primary">创建测验</router-link>
-          <router-link to="/wrong-book" class="edu-btn edu-btn-danger">错题本</router-link>
+          <router-link to="/student/wrong-book" class="edu-btn edu-btn-danger">错题本</router-link>
         </div>
       </div>
 
@@ -82,10 +82,16 @@
               <span>👤 {{ quiz.username }}</span>
               <span>📚 {{ quiz.courseName || '无关联课程' }}</span>
               <span>❓ {{ quiz.questionCount }} 题</span>
+              <span>🎯 剩余 {{ quiz.remainingAttempts }} / {{ quiz.maxAttempts }} 次</span>
+            </div>
+            <div class="quiz-tags">
+              <span v-if="quiz.totalTime > 0" class="type">限时 {{ quiz.totalTime }} 分钟</span>
+              <span v-if="quiz.shuffleQuestions" class="type">随机题序</span>
+              <span v-if="quiz.autoSaveEnabled" class="type">自动保存</span>
             </div>
             <div class="quiz-actions">
-              <router-link :to="`/quiz/${quiz.id}/take`" class="edu-btn edu-btn-primary">
-                立即答题
+              <router-link :to="quiz.attemptLimitReached ? '/quizzes' : `/quiz/${quiz.id}/take`" class="edu-btn edu-btn-primary" :class="{ disabled: quiz.attemptLimitReached }">
+                {{ quiz.attemptLimitReached ? '次数已用完' : '立即答题' }}
               </router-link>
             </div>
           </div>
@@ -123,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { quizApi } from '../api/quiz'
@@ -195,6 +201,16 @@ const handleLogout = () => {
 
 onMounted(() => {
   fetchMyQuizzes()
+})
+
+watch(activeTab, (tab) => {
+  if (tab === 'my') {
+    fetchMyQuizzes()
+  } else if (tab === 'available') {
+    fetchAvailableQuizzes()
+  } else if (tab === 'records') {
+    fetchRecords()
+  }
 })
 </script>
 
@@ -316,6 +332,13 @@ onMounted(() => {
   line-height: 1.5;
 }
 
+.quiz-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .quiz-meta {
   display: flex;
   flex-wrap: wrap;
@@ -333,6 +356,11 @@ onMounted(() => {
 .quiz-actions :deep(.edu-btn) {
   flex: 1;
   height: 40px;
+}
+
+.quiz-actions :deep(.edu-btn.disabled) {
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .records-table {

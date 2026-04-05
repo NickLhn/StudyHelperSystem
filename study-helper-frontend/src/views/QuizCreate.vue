@@ -1,40 +1,32 @@
 <template>
-  <div class="quiz-create-container">
-    <main class="create-content">
-      <div class="create-card">
-        <h2>创建测验</h2>
-        
-        <form @submit.prevent="handleSubmit">
-          <div class="form-group">
-            <label>测验标题 *</label>
-            <input 
-              v-model="form.title" 
-              type="text" 
-              placeholder="请输入测验标题"
-              required
-            />
+  <div class="page-stack">
+    <section class="page-intro form-shell">
+      <div class="page-intro-copy">
+        <span class="page-eyebrow">Quiz Builder</span>
+        <h2 class="page-title">创建测验</h2>
+        <p class="page-subtitle">把测验信息和题目编辑器整理到同一条流里，后续接自动批改会更顺手。</p>
+      </div>
+    </section>
+
+    <main class="form-shell">
+      <section class="info-card form-panel">
+        <form class="form-grid" @submit.prevent="handleSubmit">
+          <div class="field">
+            <label>测验标题</label>
+            <input v-model="form.title" type="text" placeholder="请输入测验标题" required />
           </div>
 
-          <div class="form-group">
+          <div class="field">
             <label>测验描述</label>
-            <textarea 
-              v-model="form.description" 
-              rows="3"
-              placeholder="请输入测验描述..."
-            ></textarea>
+            <textarea v-model="form.description" rows="4" placeholder="请输入测验说明"></textarea>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>总时间（分钟）</label>
-              <input 
-                v-model.number="form.totalTime" 
-                type="number" 
-                min="0"
-                placeholder="0表示不限时"
-              />
+          <div class="form-grid two-up">
+            <div class="field">
+              <label>总时长（分钟）</label>
+              <input v-model.number="form.totalTime" type="number" min="0" placeholder="0 表示不限时" />
             </div>
-            <div class="form-group">
+            <div class="field">
               <label>关联课程</label>
               <select v-model="form.courseId">
                 <option value="">不关联课程</option>
@@ -45,120 +37,112 @@
             </div>
           </div>
 
-          <div class="questions-section">
-            <div class="section-header">
-              <h3>题目设置</h3>
-              <button type="button" @click="addQuestion" class="btn-add-question">
-                + 添加题目
-              </button>
+          <div class="form-grid three-up">
+            <div class="field">
+              <label>最大作答次数</label>
+              <input v-model.number="form.maxAttempts" type="number" min="1" max="10" />
+            </div>
+            <label class="toggle-field">
+              <span>随机题序</span>
+              <input v-model="form.shuffleQuestions" type="checkbox" />
+            </label>
+            <label class="toggle-field">
+              <span>自动保存</span>
+              <input v-model="form.autoSaveEnabled" type="checkbox" />
+            </label>
+          </div>
+
+          <div class="field hint-block">
+            <label>防作弊说明</label>
+            <p>启用后，学生端会显示剩余作答次数、随机后的题目顺序，并在作答过程中自动保存草稿；限时测验刷新页面后也会继续倒计时。</p>
+          </div>
+
+          <div class="question-shell">
+            <div class="toolbar-row question-header">
+              <div>
+                <h3 class="section-title">题目设置</h3>
+                <p class="section-copy">目前支持单选题和判断题。</p>
+              </div>
+              <button type="button" class="edu-btn edu-btn-primary" @click="addQuestion">添加题目</button>
             </div>
 
-            <div v-if="form.questions.length === 0" class="no-questions">
-              点击上方按钮添加题目
+            <div v-if="form.questions.length === 0" class="empty-panel">
+              <h3 class="empty-title">还没有题目</h3>
+              <p class="empty-copy">先添加第一道题，系统才可以创建测验。</p>
             </div>
 
-            <div v-else class="questions-list">
-              <div 
-                v-for="(question, index) in form.questions" 
-                :key="index" 
-                class="question-item"
-              >
-                <div class="question-header">
-                  <span>题目 {{ index + 1 }}</span>
-                  <button type="button" @click="removeQuestion(index)" class="btn-remove">
-                    ×
-                  </button>
+            <div v-else class="question-list">
+              <article v-for="(question, index) in form.questions" :key="index" class="question-card">
+                <div class="toolbar-row question-card-head">
+                  <strong>题目 {{ index + 1 }}</strong>
+                  <button type="button" class="edu-btn edu-btn-danger" @click="removeQuestion(index)">删除</button>
                 </div>
 
-                <div class="form-group">
-                  <label>题目内容 *</label>
-                  <textarea 
-                    v-model="question.content" 
-                    rows="2"
-                    placeholder="请输入题目内容"
-                    required
-                  ></textarea>
+                <div class="field">
+                  <label>题目内容</label>
+                  <textarea v-model="question.content" rows="3" placeholder="请输入题目内容" required></textarea>
                 </div>
 
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>题目类型 *</label>
+                <div class="form-grid two-up">
+                  <div class="field">
+                    <label>题目类型</label>
                     <select v-model="question.type" required>
                       <option value="SINGLE_CHOICE">单选题</option>
                       <option value="TRUE_FALSE">判断题</option>
                     </select>
                   </div>
-                  <div class="form-group">
-                    <label>分值 *</label>
-                    <input 
-                      v-model.number="question.score" 
-                      type="number" 
-                      min="1"
+                  <div class="field">
+                    <label>分值</label>
+                    <input v-model.number="question.score" type="number" min="1" required />
+                  </div>
+                </div>
+
+                <div v-if="question.type === 'SINGLE_CHOICE'" class="field">
+                  <label>选项设置</label>
+                  <div class="option-list">
+                    <input
+                      v-for="(letter, optIndex) in optionLetters"
+                      :key="letter"
+                      v-model="question.options[optIndex]"
+                      type="text"
+                      :placeholder="`选项 ${letter}`"
                       required
                     />
                   </div>
+                  <select v-model="question.answer" required>
+                    <option value="">请选择正确答案</option>
+                    <option v-for="letter in optionLetters" :key="letter" :value="letter">{{ letter }}</option>
+                  </select>
                 </div>
 
-                <!-- 单选题选项 -->
-                <div v-if="question.type === 'SINGLE_CHOICE'" class="options-section">
-                  <label>选项 *</label>
-                  <div v-for="(option, optIndex) in 4" :key="optIndex" class="option-item">
-                    <span class="option-letter">{{ String.fromCharCode(65 + optIndex) }}.</span>
-                    <input 
-                      v-model="question.options[optIndex]" 
-                      type="text" 
-                      :placeholder="`选项${String.fromCharCode(65 + optIndex)}`"
-                      required
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label>正确答案 *</label>
-                    <select v-model="question.answer" required>
-                      <option value="">请选择正确答案</option>
-                      <option v-for="(option, optIndex) in 4" :key="optIndex" :value="String.fromCharCode(65 + optIndex)">
-                        {{ String.fromCharCode(65 + optIndex) }}
-                      </option>
-                    </select>
-                  </div>
+                <div v-else class="field">
+                  <label>正确答案</label>
+                  <select v-model="question.answer" required>
+                    <option value="">请选择正确答案</option>
+                    <option value="A">正确</option>
+                    <option value="B">错误</option>
+                  </select>
                 </div>
 
-                <!-- 判断题 -->
-                <div v-else-if="question.type === 'TRUE_FALSE'" class="true-false-section">
-                  <div class="form-group">
-                    <label>正确答案 *</label>
-                    <select v-model="question.answer" required>
-                      <option value="">请选择正确答案</option>
-                      <option value="A">正确</option>
-                      <option value="B">错误</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-group">
+                <div class="field">
                   <label>解析</label>
-                  <textarea 
-                    v-model="question.analysis" 
-                    rows="2"
-                    placeholder="请输入题目解析（可选）"
-                  ></textarea>
+                  <textarea v-model="question.analysis" rows="2" placeholder="可选：输入题目解析"></textarea>
                 </div>
-              </div>
+              </article>
             </div>
           </div>
 
-          <div v-if="error" class="error-message">{{ error }}</div>
-          <div v-if="success" class="success-message">{{ success }}</div>
+          <div v-if="error" class="message-banner error">{{ error }}</div>
+          <div v-if="success" class="message-banner success">{{ success }}</div>
 
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="goBack">
-              取消
-            </button>
-            <button type="submit" class="btn-submit" :disabled="loading || form.questions.length === 0">
+          <div class="toolbar-row">
+            <button type="button" class="edu-btn edu-btn-secondary" @click="goBack">取消</button>
+            <button type="submit" class="edu-btn edu-btn-primary" :disabled="loading || form.questions.length === 0">
               {{ loading ? '创建中...' : '创建测验' }}
             </button>
           </div>
         </form>
-      </div>
+      </section>
     </main>
   </div>
 </template>
@@ -178,10 +162,14 @@ const form = reactive({
   title: '',
   description: '',
   totalTime: 0,
+  maxAttempts: 1,
+  shuffleQuestions: false,
+  autoSaveEnabled: true,
   courseId: '',
   questions: []
 })
 
+const optionLetters = ['A', 'B', 'C', 'D']
 const courses = ref([])
 const error = ref('')
 const success = ref('')
@@ -219,15 +207,14 @@ const handleSubmit = async () => {
     return
   }
 
-  // 验证题目
-  for (let i = 0; i < form.questions.length; i++) {
+  for (let i = 0; i < form.questions.length; i += 1) {
     const q = form.questions[i]
     if (!q.content.trim()) {
       error.value = `第${i + 1}题的内容不能为空`
       return
     }
     if (q.type === 'SINGLE_CHOICE') {
-      if (q.options.some(opt => !opt.trim())) {
+      if (q.options.some((opt) => !opt.trim())) {
         error.value = `第${i + 1}题的选项不能为空`
         return
       }
@@ -243,8 +230,7 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
-    // 转换题目格式
-    const questionsData = form.questions.map(q => ({
+    const questionsData = form.questions.map((q) => ({
       content: q.content,
       type: q.type,
       options: q.type === 'SINGLE_CHOICE' ? q.options : ['正确', '错误'],
@@ -257,22 +243,19 @@ const handleSubmit = async () => {
       title: form.title,
       description: form.description,
       totalTime: form.totalTime,
+      maxAttempts: form.maxAttempts,
+      shuffleQuestions: form.shuffleQuestions,
+      autoSaveEnabled: form.autoSaveEnabled,
       courseId: form.courseId || undefined,
       questions: questionsData
     }
 
     const response = await quizApi.createQuiz(userStore.user.id, requestData)
-    
     if (response.data.code === 200) {
       success.value = '测验创建成功！'
       setTimeout(() => {
-        // 检查当前路由是否在教师端
-        if (route.path.startsWith('/teacher/')) {
-          router.push('/teacher/quizzes')
-        } else {
-          router.push('/quizzes')
-        }
-      }, 1500)
+        router.push(route.path.startsWith('/teacher/') ? '/teacher/quizzes' : '/quizzes')
+      }, 900)
     } else {
       error.value = response.data.message
     }
@@ -284,17 +267,7 @@ const handleSubmit = async () => {
 }
 
 const goBack = () => {
-  // 检查当前路由是否在教师端
-  if (route.path.startsWith('/teacher/')) {
-    router.push('/teacher/quizzes')
-  } else {
-    router.push('/quizzes')
-  }
-}
-
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
+  router.push(route.path.startsWith('/teacher/') ? '/teacher/quizzes' : '/quizzes')
 }
 
 onMounted(() => {
@@ -306,267 +279,65 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.quiz-create-container {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #42b883;
-  color: white;
-}
-
-.nav-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-logout {
-  background-color: transparent;
-  border: 1px solid white;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-logout:hover {
-  background-color: white;
-  color: #42b883;
-}
-
-.create-content {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-}
-
-.create-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.create-card h2 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #555;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
-  font-family: inherit;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.form-group textarea {
-  resize: vertical;
-}
-
-.form-row {
+.question-shell {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 16px;
 }
 
-.section-header {
-  display: flex;
+.question-list {
+  display: grid;
+  gap: 16px;
+}
+
+.question-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.question-card-head {
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
 }
 
-.section-header h3 {
-  color: #333;
+.option-list {
+  display: grid;
+  gap: 10px;
+}
+
+.three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(23, 32, 51, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.toggle-field input {
+  width: 18px;
+  height: 18px;
+}
+
+.hint-block p {
   margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
 }
 
-.btn-add-question {
-  background: #42b883;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
-}
-
-.btn-add-question:hover {
-  background: #369870;
-}
-
-.no-questions {
-  text-align: center;
-  color: #888;
-  padding: 2rem;
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-}
-
-.questions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.question-item {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 1.5rem;
-  background: #fafafa;
-}
-
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #eee;
-}
-
-.btn-remove {
-  background: #ff6b6b;
-  color: white;
-  border: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.options-section,
-.true-false-section {
-  margin: 1rem 0;
-}
-
-.option-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.option-letter {
-  font-weight: bold;
-  color: #667eea;
-  min-width: 20px;
-}
-
-.option-item input {
-  flex: 1;
-}
-
-.error-message {
-  color: #e74c3c;
-  margin-bottom: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-.success-message {
-  color: #27ae60;
-  margin-bottom: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.btn-cancel,
-.btn-submit {
-  flex: 1;
-  padding: 0.875rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-}
-
-.btn-cancel {
-  background: #f0f0f0;
-  color: #666;
-}
-
-.btn-cancel:hover {
-  background: #e0e0e0;
-}
-
-.btn-submit {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-submit:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-submit:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-@media (max-width: 600px) {
-  .form-row {
+@media (max-width: 768px) {
+  .three-up {
     grid-template-columns: 1fr;
   }
 }

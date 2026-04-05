@@ -1,0 +1,30 @@
+# Findings
+
+- Frontend stack is Vue 3 + Vite with a custom CSS design system in `study-helper-frontend/src/styles/design-system.css`.
+- Student, teacher, and admin areas each have separate layout files with duplicated structure and inconsistent visual language.
+- Many business pages use isolated scoped styles, emoji-heavy labels, and mismatched gradients, which makes the product feel fragmented.
+- Teacher tasks currently represent task/plan management rather than a full assignment workflow.
+- `TeacherGrades.vue` is still a placeholder, so the teacher information architecture has room for a stronger dashboard/analysis treatment.
+- The most leverage came from replacing the shell layout and page primitives first, then migrating dashboards, list pages, and forms onto the same structure.
+- Build verification succeeded after refactoring the global CSS, teacher/student/admin shells, major list pages, statistics, and core creation forms.
+- Refactoring `Home.vue`, `Login.vue`, and `EduNavbar.vue` removed the most visible style gap between the public entry flow and the authenticated workspace.
+- The next major product gap is no longer visual consistency; it is the absence of a dedicated homework domain with submission, grading, review, analytics, and notification models.
+- Existing quiz scoring logic is a strong foundation for objective-question homework auto-grading and should be reused rather than duplicated.
+- `Messages.vue` is still an empty placeholder, while both teacher and student shells already expose a prominent “消息中心” entry.
+- Current data model already contains enough timestamps and statuses to generate meaningful notifications without adding a notifications table: `homeworks.deadline_at`, `homework_submissions.status`, `quizzes.status/created_at`, and `materials.created_at`.
+- The most useful first-wave reminders are different by role:
+  - Teachers care about pending homework review, low submission before deadline, and recent student submissions.
+  - Students care about upcoming homework deadlines, newly published quizzes, and recent material updates in enrolled courses.
+- The current notification implementation does not require any new database columns or tables.
+- If later you want persistent `已读/未读` state, pinned messages, or historical message retention, then a dedicated `notifications` table plus a read-status field or relation will become necessary.
+- The material center previously had no structured metadata model, which made search and filtering depend almost entirely on free-text title/description.
+- The most practical first-step material schema extension is adding four nullable columns to `materials`: `category`, `tags`, `version_label`, and `version_note`.
+- While adding material metadata verification, the `/api/material/{id}` path exposed a real lazy-loading bug: mapping `MaterialDTO` could fail outside a session when reading `user` or `course`.
+- Wrapping material read paths in `@Transactional(readOnly = true)` fixes that runtime issue and makes the new integration test representative of production access.
+- The original quiz detail API returned `QuestionDTO.answer` to any allowed viewer, which means students could obtain correct answers before submitting.
+- A practical phase-one anti-cheat solution does not need a new session table yet: `quizzes.max_attempts`, `quizzes.shuffle_questions`, and `quizzes.auto_save_enabled` are enough to support attempt limiting, deterministic shuffled order, and local draft persistence.
+- Persisted countdown continuity is currently handled in the browser via local storage, so it survives refresh on the same device but is not yet a cross-device exam-session lock.
+- Course management previously had no lifecycle state, so active courses and historical courses were mixed together in both teacher and student views.
+- The most practical first-step archive model is three columns on `courses`: `status`, `semester_label`, and `archived_at`, paired with status-filtered list APIs rather than a brand-new term/archive subsystem.
+- Archived courses should reject new student joins, but still remain visible in filtered historical views for teachers and already-enrolled students.
+- While verifying course archive APIs, enrolled-course reads exposed another lazy-loading path through course mapping; `CourseService` read methods now need `@Transactional(readOnly = true)` for stable DTO assembly.
